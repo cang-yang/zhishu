@@ -41,8 +41,6 @@ const rules = computed<Record<keyof FormRuleModel, App.Global.FormRule[]>>(() =>
   };
 });
 
-
-
 /** 一键填充测试账号 */
 function fillTestAccount() {
   model.userName = 'admin';
@@ -68,7 +66,6 @@ async function handleSubmit() {
     localStg.remove('rememberedLogin');
   }
 }
-
 </script>
 
 <template>
@@ -103,14 +100,7 @@ async function handleSubmit() {
       </NButton>
 
       <!-- 测试账号快捷填充 -->
-      <NButton
-        type="success"
-        size="medium"
-        :block="true"
-        ghost
-        class="mt-12px"
-        @click="fillTestAccount"
-      >
+      <NButton type="success" size="medium" :block="true" ghost class="mt-12px" @click="fillTestAccount">
         填充测试账号 (admin)
       </NButton>
 

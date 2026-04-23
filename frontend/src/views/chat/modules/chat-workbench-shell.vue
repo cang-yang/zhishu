@@ -507,7 +507,9 @@ onMounted(async () => {
             </section>
           </div>
           <div v-else class="chat-workbench__sidebar-empty">
-            {{ filteredSessionList.length ? '没有匹配的会话结果。' : '还没有聊天会话，点击上方按钮即可开启第一段对话。' }}
+            {{
+              filteredSessionList.length ? '没有匹配的会话结果。' : '还没有聊天会话，点击上方按钮即可开启第一段对话。'
+            }}
           </div>
         </NSpin>
       </section>
@@ -539,7 +541,9 @@ onMounted(async () => {
         <div class="chat-workbench__contextbar-actions">
           <div class="chat-workbench__contextbar-meta">
             <span v-for="pill in stageStatusPills" :key="pill" class="chat-workbench__meta-pill">{{ pill }}</span>
-            <span class="chat-workbench__meta-pill chat-workbench__meta-pill--soft">引用预览与设置工作窗将在主舞台内打开</span>
+            <span class="chat-workbench__meta-pill chat-workbench__meta-pill--soft">
+              引用预览与设置工作窗将在主舞台内打开
+            </span>
           </div>
           <div class="chat-workbench__contextbar-tools">
             <button type="button" class="chat-workbench__context-action" @click="openStageWindow('knowledge-base')">
@@ -583,8 +587,7 @@ onMounted(async () => {
   padding: 18px;
   background:
     radial-gradient(circle at top left, rgba(79, 124, 255, 0.12), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.08), transparent 22%),
-    #020617;
+    radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.08), transparent 22%), #020617;
 
   &::before {
     content: '';

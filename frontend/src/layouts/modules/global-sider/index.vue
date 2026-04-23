@@ -22,14 +22,10 @@ const menuWrapperClass = computed(() => (showLogo.value ? 'flex-1-hidden' : 'h-f
 <template>
   <DarkModeContainer class="global-sider size-full" :inverted="darkMenu">
     <div class="global-sider__panel app-surface-card">
-      <div
-        v-if="showLogo"
-        class="global-sider__brand"
-        :style="{ minHeight: themeStore.header.height + 'px' }"
-      >
+      <div v-if="showLogo" class="global-sider__brand" :style="{ minHeight: themeStore.header.height + 'px' }">
         <GlobalLogo :show-title="!appStore.siderCollapse" />
       </div>
-      <div :id="GLOBAL_SIDER_MENU_ID" :class="['global-sider__menu', menuWrapperClass]"></div>
+      <div :id="GLOBAL_SIDER_MENU_ID" class="global-sider__menu" :class="[menuWrapperClass]"></div>
     </div>
   </DarkModeContainer>
 </template>

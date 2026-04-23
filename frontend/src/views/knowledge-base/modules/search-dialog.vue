@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useNaiveForm } from '@/hooks/common/form';
 import { useAuthStore } from '@/store/modules/auth';
+import { useNaiveForm } from '@/hooks/common/form';
 
 defineOptions({
   name: 'SearchDialog'
@@ -152,9 +152,7 @@ watch(visible, () => {
           <template #footer>
             <div class="search-dialog__footer">
               <span>来源：{{ item.fileName }}</span>
-              <NButton text type="primary" @click="handlePreview(item)">
-                查看引用
-              </NButton>
+              <NButton text type="primary" @click="handlePreview(item)">查看引用</NButton>
             </div>
           </template>
         </NCard>

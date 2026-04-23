@@ -1,7 +1,7 @@
+import { useAuthStore } from '@/store/modules/auth';
+import { SetupStoreId, UploadStatus } from '@/enum';
 import { REQUEST_ID_KEY } from '~/packages/axios/src';
 import { nanoid } from '~/packages/utils/src';
-import { SetupStoreId, UploadStatus } from '@/enum';
-import { useAuthStore } from '@/store/modules/auth';
 
 export const useKnowledgeBaseStore = defineStore(SetupStoreId.KnowledgeBase, () => {
   const authStore = useAuthStore();

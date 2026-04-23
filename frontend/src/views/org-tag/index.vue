@@ -1,9 +1,9 @@
 <script setup lang="tsx">
 import { onActivated, onBeforeUnmount, onMounted, ref } from 'vue';
 import { NButton, NPopconfirm } from 'naive-ui';
-import { useTable, useTableOperate } from '@/hooks/common/table';
 import { fetchGetOrgTagList } from '@/service/api';
 import { useAppStore } from '@/store/modules/app';
+import { useTable, useTableOperate } from '@/hooks/common/table';
 import OrgTagOperateDialog from './modules/org-tag-operate-dialog.vue';
 
 const appStore = useAppStore();

@@ -2,17 +2,17 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { LAYOUT_SCROLL_EL_ID } from '@sa/materials';
-import SvgIcon from '@/components/custom/svg-icon.vue';
-import FloatingMenu from '@/components/custom/FloatingMenu.vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { useThemeStore } from '@/store/modules/theme';
 import { useWorkspaceStore } from '@/store/modules/workspace';
 import { useChatSessionStore } from '@/store/modules/chat/session';
+import { useAdminChatStore } from '@/store/modules/admin-chat';
+import SvgIcon from '@/components/custom/svg-icon.vue';
+import FloatingMenu from '@/components/custom/FloatingMenu.vue';
 import MobileAdminPanel from '../mobile/MobileAdminPanel.vue';
 import MobileDrawer from '../mobile/MobileDrawer.vue';
 import MobileTabBar from '../mobile/MobileTabBar.vue';
 import MobileTopBar from '../mobile/MobileTopBar.vue';
-import { useAdminChatStore } from '@/store/modules/admin-chat';
 
 defineOptions({
   name: 'UnifiedWorkbenchShell'
@@ -38,7 +38,9 @@ const {
   loadingSessions: adminChatLoadingSessions
 } = storeToRefs(adminChatStore);
 
-const shellClass = computed(() => (themeStore.darkMode ? 'unified-workbench-shell--dark' : 'unified-workbench-shell--light'));
+const shellClass = computed(() =>
+  themeStore.darkMode ? 'unified-workbench-shell--dark' : 'unified-workbench-shell--light'
+);
 
 const currentRouteName = computed(() => String(route.name || 'chat'));
 
@@ -698,7 +700,10 @@ onBeforeUnmount(() => {
                 :key="item.key"
                 type="button"
                 class="unified-workbench-shell__nav-item"
-                :class="{ 'is-active': (item.key === 'settings' && currentRouteName === 'personal-center') || currentRouteName === item.key }"
+                :class="{
+                  'is-active':
+                    (item.key === 'settings' && currentRouteName === 'personal-center') || currentRouteName === item.key
+                }"
                 @click="navigatePrimary(item.key)"
               >
                 <SvgIcon :icon="item.icon" class="text-18px" />
@@ -727,15 +732,26 @@ onBeforeUnmount(() => {
 
         <template v-else-if="sidebarMode === 'chat-list'">
           <button type="button" class="unified-workbench-shell__back-button" @click="navigateHome">◀ 返回</button>
-          <button type="button" class="unified-workbench-shell__primary-button" @click="handleCreateSession">[＋ 新话题]</button>
+          <button type="button" class="unified-workbench-shell__primary-button" @click="handleCreateSession">
+            [＋ 新话题]
+          </button>
           <div class="unified-workbench-shell__search-shell">
-            <input v-model="sessionKeyword" type="text" class="unified-workbench-shell__search-input" placeholder="搜索会话..." />
+            <input
+              v-model="sessionKeyword"
+              type="text"
+              class="unified-workbench-shell__search-input"
+              placeholder="搜索会话..."
+            />
           </div>
           <section class="unified-workbench-shell__section unified-workbench-shell__section--fill">
             <div class="unified-workbench-shell__section-title">话题 {{ sessionList.length }}</div>
             <NSpin :show="loadingSessions" class="min-h-0 flex-1">
               <div v-if="sessionGroups.length" class="unified-workbench-shell__session-groups">
-                <section v-for="group in sessionGroups" :key="group.label" class="unified-workbench-shell__session-group">
+                <section
+                  v-for="group in sessionGroups"
+                  :key="group.label"
+                  class="unified-workbench-shell__session-group"
+                >
                   <header class="unified-workbench-shell__session-group-title"># {{ group.label }}</header>
                   <div class="unified-workbench-shell__session-items">
                     <button
@@ -764,7 +780,9 @@ onBeforeUnmount(() => {
                           <span>{{ pinnedSessionIds.includes(session.sessionId) ? '📌' : '☆' }}</span>
                           <strong>{{ session.title || '未命名会话' }}</strong>
                         </span>
-                        <span class="unified-workbench-shell__session-item-preview">{{ session.latestPreview || '从任何想法开始...' }}</span>
+                        <span class="unified-workbench-shell__session-item-preview">
+                          {{ session.latestPreview || '从任何想法开始...' }}
+                        </span>
                       </template>
                     </button>
                   </div>
@@ -780,7 +798,10 @@ onBeforeUnmount(() => {
 
           <NPopover v-model:show="adminUserSelectorVisible" trigger="click" placement="bottom-start">
             <template #trigger>
-              <button type="button" class="unified-workbench-shell__profile-card unified-workbench-shell__profile-card--compact">
+              <button
+                type="button"
+                class="unified-workbench-shell__profile-card unified-workbench-shell__profile-card--compact"
+              >
                 <div class="unified-workbench-shell__avatar unified-workbench-shell__avatar--mini">
                   <span>{{ (activeAdminChatUser?.username || 'U').slice(0, 1).toUpperCase() }}</span>
                 </div>
@@ -812,21 +833,32 @@ onBeforeUnmount(() => {
                     <span>{{ item.userId === adminChatUserId ? '✓' : '•' }}</span>
                     <strong>{{ item.username }}</strong>
                   </button>
-                  <div v-if="!filteredAdminChatUsers.length" class="unified-workbench-shell__empty-tip">没有匹配的用户</div>
+                  <div v-if="!filteredAdminChatUsers.length" class="unified-workbench-shell__empty-tip">
+                    没有匹配的用户
+                  </div>
                 </div>
               </NSpin>
             </div>
           </NPopover>
 
           <div class="unified-workbench-shell__search-shell">
-            <input v-model="adminChatSessionKeyword" type="text" class="unified-workbench-shell__search-input" placeholder="搜索会话..." />
+            <input
+              v-model="adminChatSessionKeyword"
+              type="text"
+              class="unified-workbench-shell__search-input"
+              placeholder="搜索会话..."
+            />
           </div>
 
           <section class="unified-workbench-shell__section unified-workbench-shell__section--fill">
             <div class="unified-workbench-shell__section-title">该用户 {{ adminChatSessions.length }} 个话题</div>
             <NSpin :show="adminChatLoadingSessions" class="min-h-0 flex-1">
               <div v-if="adminChatSessionGroups.length" class="unified-workbench-shell__session-groups">
-                <section v-for="group in adminChatSessionGroups" :key="group.label" class="unified-workbench-shell__session-group">
+                <section
+                  v-for="group in adminChatSessionGroups"
+                  :key="group.label"
+                  class="unified-workbench-shell__session-group"
+                >
                   <header class="unified-workbench-shell__session-group-title"># {{ group.label }}</header>
                   <div class="unified-workbench-shell__session-items">
                     <button
@@ -841,7 +873,9 @@ onBeforeUnmount(() => {
                         <span>{{ session.sessionId === adminChatActiveSessionId ? '▶' : '☆' }}</span>
                         <strong>{{ session.title || '未命名会话' }}</strong>
                       </span>
-                      <span class="unified-workbench-shell__session-item-preview">{{ session.latestPreview || '暂无消息摘要' }}</span>
+                      <span class="unified-workbench-shell__session-item-preview">
+                        {{ session.latestPreview || '暂无消息摘要' }}
+                      </span>
                     </button>
                   </div>
                 </section>
@@ -902,15 +936,26 @@ onBeforeUnmount(() => {
       >
         <template v-if="isMobileLayout && sidebarMode === 'chat-list'">
           <section class="unified-workbench-shell__mobile-panel">
-            <button type="button" class="unified-workbench-shell__primary-button" @click="handleCreateSession">[＋ 新话题]</button>
+            <button type="button" class="unified-workbench-shell__primary-button" @click="handleCreateSession">
+              [＋ 新话题]
+            </button>
             <div class="unified-workbench-shell__search-shell">
-              <input v-model="sessionKeyword" type="text" class="unified-workbench-shell__search-input" placeholder="搜索会话..." />
+              <input
+                v-model="sessionKeyword"
+                type="text"
+                class="unified-workbench-shell__search-input"
+                placeholder="搜索会话..."
+              />
             </div>
             <section class="unified-workbench-shell__section unified-workbench-shell__section--fill">
               <div class="unified-workbench-shell__section-title">话题 {{ sessionList.length }}</div>
               <NSpin :show="loadingSessions" class="min-h-0 flex-1">
                 <div v-if="sessionGroups.length" class="unified-workbench-shell__session-groups">
-                  <section v-for="group in sessionGroups" :key="group.label" class="unified-workbench-shell__session-group">
+                  <section
+                    v-for="group in sessionGroups"
+                    :key="group.label"
+                    class="unified-workbench-shell__session-group"
+                  >
                     <header class="unified-workbench-shell__session-group-title"># {{ group.label }}</header>
                     <div class="unified-workbench-shell__session-items">
                       <button
@@ -942,13 +987,17 @@ onBeforeUnmount(() => {
                             <span>{{ pinnedSessionIds.includes(session.sessionId) ? '📌' : '☆' }}</span>
                             <strong>{{ session.title || '未命名会话' }}</strong>
                           </span>
-                          <span class="unified-workbench-shell__session-item-preview">{{ session.latestPreview || '从任何想法开始...' }}</span>
+                          <span class="unified-workbench-shell__session-item-preview">
+                            {{ session.latestPreview || '从任何想法开始...' }}
+                          </span>
                         </template>
                       </button>
                     </div>
                   </section>
                 </div>
-                <div v-else class="unified-workbench-shell__empty-tip">暂无会话，发送第一条消息后会自动生成新话题。</div>
+                <div v-else class="unified-workbench-shell__empty-tip">
+                  暂无会话，发送第一条消息后会自动生成新话题。
+                </div>
               </NSpin>
             </section>
           </section>
@@ -959,7 +1008,10 @@ onBeforeUnmount(() => {
             <div class="unified-workbench-shell__profile-trigger">
               <NPopover v-model:show="adminUserSelectorVisible" trigger="click" placement="bottom-start">
                 <template #trigger>
-                  <button type="button" class="unified-workbench-shell__profile-card unified-workbench-shell__profile-card--compact">
+                  <button
+                    type="button"
+                    class="unified-workbench-shell__profile-card unified-workbench-shell__profile-card--compact"
+                  >
                     <div class="unified-workbench-shell__avatar unified-workbench-shell__avatar--mini">
                       <span>{{ (activeAdminChatUser?.username || 'U').slice(0, 1).toUpperCase() }}</span>
                     </div>
@@ -991,7 +1043,9 @@ onBeforeUnmount(() => {
                         <span>{{ item.userId === adminChatUserId ? '✓' : '•' }}</span>
                         <strong>{{ item.username }}</strong>
                       </button>
-                      <div v-if="!filteredAdminChatUsers.length" class="unified-workbench-shell__empty-tip">没有匹配的用户</div>
+                      <div v-if="!filteredAdminChatUsers.length" class="unified-workbench-shell__empty-tip">
+                        没有匹配的用户
+                      </div>
                     </div>
                   </NSpin>
                 </div>
@@ -999,14 +1053,23 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="unified-workbench-shell__search-shell">
-              <input v-model="adminChatSessionKeyword" type="text" class="unified-workbench-shell__search-input" placeholder="搜索会话..." />
+              <input
+                v-model="adminChatSessionKeyword"
+                type="text"
+                class="unified-workbench-shell__search-input"
+                placeholder="搜索会话..."
+              />
             </div>
 
             <section class="unified-workbench-shell__section unified-workbench-shell__section--fill">
               <div class="unified-workbench-shell__section-title">该用户 {{ adminChatSessions.length }} 个话题</div>
               <NSpin :show="adminChatLoadingSessions" class="min-h-0 flex-1">
                 <div v-if="adminChatSessionGroups.length" class="unified-workbench-shell__session-groups">
-                  <section v-for="group in adminChatSessionGroups" :key="group.label" class="unified-workbench-shell__session-group">
+                  <section
+                    v-for="group in adminChatSessionGroups"
+                    :key="group.label"
+                    class="unified-workbench-shell__session-group"
+                  >
                     <header class="unified-workbench-shell__session-group-title"># {{ group.label }}</header>
                     <div class="unified-workbench-shell__session-items">
                       <button
@@ -1021,7 +1084,9 @@ onBeforeUnmount(() => {
                           <span>{{ session.sessionId === adminChatActiveSessionId ? '▶' : '☆' }}</span>
                           <strong>{{ session.title || '未命名会话' }}</strong>
                         </span>
-                        <span class="unified-workbench-shell__session-item-preview">{{ session.latestPreview || '暂无消息摘要' }}</span>
+                        <span class="unified-workbench-shell__session-item-preview">
+                          {{ session.latestPreview || '暂无消息摘要' }}
+                        </span>
                       </button>
                     </div>
                   </section>
@@ -1036,7 +1101,12 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <MobileTabBar v-if="isMobileLayout" :items="mobileTabItems" :active-key="mobileTabActiveKey" @select="handleMobileTabSelect" />
+    <MobileTabBar
+      v-if="isMobileLayout"
+      :items="mobileTabItems"
+      :active-key="mobileTabActiveKey"
+      @select="handleMobileTabSelect"
+    />
 
     <FloatingMenu
       v-if="isMobileLayout"
@@ -1513,8 +1583,7 @@ onBeforeUnmount(() => {
   .unified-workbench-shell {
     &__main {
       height: 100dvh;
-      padding:
-        calc(env(safe-area-inset-top) + var(--mobile-top-bar-height, 56px) + 12px)
+      padding: calc(env(safe-area-inset-top) + var(--mobile-top-bar-height, 56px) + 12px)
         var(--mobile-content-padding, 16px)
         calc(env(safe-area-inset-bottom) + var(--mobile-tab-bar-height, 60px) + 12px);
     }

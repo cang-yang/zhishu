@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
-import { useNaiveForm } from '@/hooks/common/form';
 import { enableStatusOptions } from '@/constants/common';
+import { useNaiveForm } from '@/hooks/common/form';
 
 defineOptions({
   name: 'UserSearch'
@@ -47,7 +47,11 @@ onBeforeUnmount(() => {
   <NCard :bordered="false" size="small" class="user-search">
     <NForm ref="formRef" :model="model" label-placement="left" :show-feedback="false" inline class="user-search__form">
       <NFormItem label="关键词" path="keyword" class="user-search__item user-search__item--keyword">
-        <NInput v-model:value="model.keyword" :placeholder="isMobileViewport ? '搜索用户...' : '请输入关键词'" clearable />
+        <NInput
+          v-model:value="model.keyword"
+          :placeholder="isMobileViewport ? '搜索用户...' : '请输入关键词'"
+          clearable
+        />
       </NFormItem>
       <NFormItem label="组织标签" path="orgTag" class="user-search__item user-search__item--org">
         <OrgTagCascader

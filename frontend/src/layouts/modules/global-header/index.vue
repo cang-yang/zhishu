@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { useFullscreen } from '@vueuse/core';
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { useFullscreen } from '@vueuse/core';
 import { GLOBAL_HEADER_MENU_ID } from '@/constants/app';
-import { $t } from '@/locales';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
 import { useUiStore } from '@/store/modules/ui';
 import { useWorkspaceStore } from '@/store/modules/workspace';
+import { $t } from '@/locales';
 import GlobalSearch from '../global-search/index.vue';
 import ThemeButton from './components/theme-button.vue';
 import UserAvatar from './components/user-avatar.vue';
@@ -125,11 +125,11 @@ function openWorkbenchWindow(key: 'knowledge-base' | 'settings') {
         <div id="header-extra" class="global-header__extra"></div>
       </div>
       <div class="global-header__actions app-toolbar">
-    <MenuToggler
-      v-if="showMenuToggler && appStore.isMobile"
-      :collapsed="appStore.siderCollapse"
-      @click="appStore.toggleSiderCollapse"
-    />
+        <MenuToggler
+          v-if="showMenuToggler && appStore.isMobile"
+          :collapsed="appStore.siderCollapse"
+          @click="appStore.toggleSiderCollapse"
+        />
         <GlobalSearch />
         <FullScreen v-if="!appStore.isMobile" :full="isFullscreen" @click="toggle" />
         <LangSwitch

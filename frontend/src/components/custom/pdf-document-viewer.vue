@@ -1,119 +1,12 @@
-<template>
-  <div class="pdf-viewer-shell">
-    <div v-if="!embeddedHeader" class="pdf-viewer-toolbar">
-      <div class="toolbar-copy">
-        <span class="viewer-badge">{{ singlePagePreviewActive ? '单页定位' : 'PDF 预览' }}</span>
-        <span class="viewer-kicker">{{ viewerKicker }}</span>
-      </div>
-      <div class="toolbar-actions">
-        <span class="toolbar-chip">
-          <template v-if="singlePagePreviewActive">第 {{ displayCurrentPage }} 页</template>
-          <template v-else>第 {{ displayCurrentPage }} / {{ totalPages || 1 }} 页</template>
-        </span>
-        <span class="toolbar-chip">{{ Math.round(zoom * 100) }}%</span>
-        <template v-if="!singlePagePreviewActive">
-          <NButton size="tiny" quaternary :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
-            <template #icon>
-              <icon-mdi-chevron-left />
-            </template>
-          </NButton>
-          <NButton size="tiny" quaternary :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
-            <template #icon>
-              <icon-mdi-chevron-right />
-            </template>
-          </NButton>
-        </template>
-        <NButton size="tiny" quaternary :disabled="zoom <= minZoom" @click="zoomOut">
-          <template #icon>
-            <icon-mdi-magnify-minus-outline />
-          </template>
-        </NButton>
-        <NButton size="tiny" quaternary :disabled="zoom >= maxZoom" @click="zoomIn">
-          <template #icon>
-            <icon-mdi-magnify-plus-outline />
-          </template>
-        </NButton>
-        <NButton size="tiny" secondary @click="resetZoom">适应宽度</NButton>
-        <NButton size="tiny" secondary @click="openInNewTab">
-          <template #icon>
-            <icon-mdi-open-in-new />
-          </template>
-          新窗口
-        </NButton>
-      </div>
-    </div>
-
-    <div class="pdf-viewer-body" :class="{ 'is-single-page': singlePagePreviewActive }">
-      <aside v-if="!singlePagePreviewActive" class="page-sidebar">
-        <button
-          v-for="page in pageSummaries"
-          :key="page.pageNumber"
-          type="button"
-          class="page-nav-item"
-          :class="{
-            'is-active': page.pageNumber === currentPage,
-            'is-target': page.pageNumber === targetPageNumber
-          }"
-          @click="goToPage(page.pageNumber)"
-        >
-          <span class="page-nav-number">P{{ displayPageNumber(page.pageNumber) }}</span>
-          <span class="page-nav-summary">{{ page.summary || `第 ${page.pageNumber} 页` }}</span>
-        </button>
-      </aside>
-
-      <div ref="stageRef" class="page-stage">
-        <div v-if="documentLoading" class="stage-feedback">
-          <NSpin size="large" />
-          <span>正在加载 PDF 文档</span>
-        </div>
-        <div v-else-if="renderError" class="stage-feedback is-error">
-          <icon-mdi-alert-circle class="text-24" />
-          <span>{{ renderError }}</span>
-        </div>
-        <div v-else class="page-scroll-shell">
-          <div v-if="!singlePagePreviewActive && !embeddedHeader" class="page-meta-row">
-            <span>第 {{ displayCurrentPage }} 页</span>
-            <span v-if="currentPage === targetPageNumber">引用定位页</span>
-            <span v-else-if="highlightCount > 0">已匹配到相关文本</span>
-            <span v-else>浏览当前页</span>
-          </div>
-
-          <div ref="pageShellRef" class="pdf-page-shell">
-            <canvas ref="canvasRef" class="pdf-canvas" />
-            <div v-if="highlightRects.length" class="pdf-highlight-overlay">
-              <div
-                v-for="(rect, index) in highlightRects"
-                :key="`${index}-${rect.left}-${rect.top}`"
-                class="pdf-highlight-rect"
-                :style="{
-                  left: `${rect.left}px`,
-                  top: `${rect.top}px`,
-                  width: `${rect.width}px`,
-                  height: `${rect.height}px`
-                }"
-              />
-            </div>
-            <div ref="textLayerRef" class="pdf-text-layer textLayer" />
-            <div v-if="pageRendering" class="page-loading-mask">
-              <NSpin size="small" />
-              <span>正在渲染页面</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch, watchEffect } from 'vue';
 import { useResizeObserver } from '@vueuse/core';
+import { NButton, NSpin } from 'naive-ui';
 import { GlobalWorkerOptions, TextLayer, getDocument } from 'pdfjs-dist';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, RenderTask } from 'pdfjs-dist';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
-import { NButton, NSpin } from 'naive-ui';
-import { getAuthorization } from '@/service/request/shared';
 import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { getAuthorization } from '@/service/request/shared';
 
 GlobalWorkerOptions.workerSrc = workerSrc;
 
@@ -131,15 +24,18 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'toolbar-change', payload: {
-    modeLabel: string;
-    helperText: string;
-    pageLabel: string;
-    zoomLabel: string;
-    singlePage: boolean;
-    canPrev: boolean;
-    canNext: boolean;
-  }): void;
+  (
+    e: 'toolbar-change',
+    payload: {
+      modeLabel: string;
+      helperText: string;
+      pageLabel: string;
+      zoomLabel: string;
+      singlePage: boolean;
+      canPrev: boolean;
+      canNext: boolean;
+    }
+  ): void;
 }
 
 interface PageSummary {
@@ -364,9 +260,7 @@ function buildMatchCandidates(value: string | string[]) {
       .map(segment => normalizeForMatch(segment))
       .filter(segment => segment.length >= 6);
 
-    segments
-      .sort((left, right) => right.length - left.length)
-      .forEach(segment => candidates.add(segment));
+    segments.sort((left, right) => right.length - left.length).forEach(segment => candidates.add(segment));
 
     // 添加冒号分割的前后部分作为额外候选
     const colonSegments = item.split(/[：:]/);
@@ -532,7 +426,7 @@ function openInNewTab() {
   const targetUrl = props.sourceUrl || props.url;
   if (!targetUrl) return;
 
-  const page = singlePagePreviewActive.value ? (props.sourcePageNumber || props.pageNumber || 1) : currentPage.value;
+  const page = singlePagePreviewActive.value ? props.sourcePageNumber || props.pageNumber || 1 : currentPage.value;
   window.open(`${targetUrl}#page=${page}`, '_blank', 'noopener,noreferrer');
 }
 
@@ -624,7 +518,7 @@ async function scheduleRender(options?: { immediate?: boolean; delay?: number })
 
   queuedRenderVersion += 1;
   const renderVersion = queuedRenderVersion;
-  const delay = options?.immediate ? 0 : options?.delay ?? 0;
+  const delay = options?.immediate ? 0 : (options?.delay ?? 0);
 
   if (renderTimer) {
     window.clearTimeout(renderTimer);
@@ -800,7 +694,12 @@ function applyHighlight() {
     return 1;
   }
 
-  const paragraphMatch = resolveParagraphHighlight(textLayer, textLayerTask.textDivs, textLayerTask.textContentItemsStr, candidates);
+  const paragraphMatch = resolveParagraphHighlight(
+    textLayer,
+    textLayerTask.textDivs,
+    textLayerTask.textContentItemsStr,
+    candidates
+  );
   if (paragraphMatch) {
     highlightRects.value = [paragraphMatch.rect];
     paragraphMatch.firstElement?.scrollIntoView({
@@ -1108,14 +1007,12 @@ function buildTextLines(container: HTMLElement, textDivs: HTMLElement[], textIte
 
     targetLine.rect.left = Math.min(targetLine.rect.left, relativeRect.left);
     targetLine.rect.top = Math.min(targetLine.rect.top, relativeRect.top);
-    targetLine.rect.width = Math.max(
-      targetLine.rect.left + targetLine.rect.width,
-      relativeRect.left + relativeRect.width
-    ) - targetLine.rect.left;
-    targetLine.rect.height = Math.max(
-      targetLine.rect.top + targetLine.rect.height,
-      relativeRect.top + relativeRect.height
-    ) - targetLine.rect.top;
+    targetLine.rect.width =
+      Math.max(targetLine.rect.left + targetLine.rect.width, relativeRect.left + relativeRect.width) -
+      targetLine.rect.left;
+    targetLine.rect.height =
+      Math.max(targetLine.rect.top + targetLine.rect.height, relativeRect.top + relativeRect.height) -
+      targetLine.rect.top;
     targetLine.centerY = (targetLine.centerY * targetLine.elements.length + centerY) / (targetLine.elements.length + 1);
     targetLine.rawText = `${targetLine.rawText} ${rawText}`;
     targetLine.text = `${targetLine.text} ${text}`;
@@ -1137,7 +1034,11 @@ function isLikelyListStart(text: string) {
   return /^[•·●○▪▸\-–—\d]+[\.\)、\s]?/.test(value);
 }
 
-function scoreParagraphMatch(text: string, compactText: string, anchors: Array<{ normalized: string; compact: string }>) {
+function scoreParagraphMatch(
+  text: string,
+  compactText: string,
+  anchors: Array<{ normalized: string; compact: string }>
+) {
   let bestScore = 0;
   for (const anchor of anchors) {
     bestScore = Math.max(bestScore, scoreAgainstAnchor(text, compactText, anchor));
@@ -1252,9 +1153,7 @@ function resolveFuzzyMatchRange(target: string, anchors: string[]): [number, num
   }
 
   // 返回最佳匹配，即使分数不高（只要有匹配就返回）
-  return bestMatch && bestMatch.score >= 0.15
-    ? [bestMatch.start, bestMatch.end]
-    : null;
+  return bestMatch && bestMatch.score >= 0.15 ? [bestMatch.start, bestMatch.end] : null;
 }
 
 function buildPhraseRanges(target: string) {
@@ -1469,6 +1368,113 @@ async function cleanupPdfState() {
 }
 </script>
 
+<template>
+  <div class="pdf-viewer-shell">
+    <div v-if="!embeddedHeader" class="pdf-viewer-toolbar">
+      <div class="toolbar-copy">
+        <span class="viewer-badge">{{ singlePagePreviewActive ? '单页定位' : 'PDF 预览' }}</span>
+        <span class="viewer-kicker">{{ viewerKicker }}</span>
+      </div>
+      <div class="toolbar-actions">
+        <span class="toolbar-chip">
+          <template v-if="singlePagePreviewActive">第 {{ displayCurrentPage }} 页</template>
+          <template v-else>第 {{ displayCurrentPage }} / {{ totalPages || 1 }} 页</template>
+        </span>
+        <span class="toolbar-chip">{{ Math.round(zoom * 100) }}%</span>
+        <template v-if="!singlePagePreviewActive">
+          <NButton size="tiny" quaternary :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
+            <template #icon>
+              <icon-mdi-chevron-left />
+            </template>
+          </NButton>
+          <NButton size="tiny" quaternary :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
+            <template #icon>
+              <icon-mdi-chevron-right />
+            </template>
+          </NButton>
+        </template>
+        <NButton size="tiny" quaternary :disabled="zoom <= minZoom" @click="zoomOut">
+          <template #icon>
+            <icon-mdi-magnify-minus-outline />
+          </template>
+        </NButton>
+        <NButton size="tiny" quaternary :disabled="zoom >= maxZoom" @click="zoomIn">
+          <template #icon>
+            <icon-mdi-magnify-plus-outline />
+          </template>
+        </NButton>
+        <NButton size="tiny" secondary @click="resetZoom">适应宽度</NButton>
+        <NButton size="tiny" secondary @click="openInNewTab">
+          <template #icon>
+            <icon-mdi-open-in-new />
+          </template>
+          新窗口
+        </NButton>
+      </div>
+    </div>
+
+    <div class="pdf-viewer-body" :class="{ 'is-single-page': singlePagePreviewActive }">
+      <aside v-if="!singlePagePreviewActive" class="page-sidebar">
+        <button
+          v-for="page in pageSummaries"
+          :key="page.pageNumber"
+          type="button"
+          class="page-nav-item"
+          :class="{
+            'is-active': page.pageNumber === currentPage,
+            'is-target': page.pageNumber === targetPageNumber
+          }"
+          @click="goToPage(page.pageNumber)"
+        >
+          <span class="page-nav-number">P{{ displayPageNumber(page.pageNumber) }}</span>
+          <span class="page-nav-summary">{{ page.summary || `第 ${page.pageNumber} 页` }}</span>
+        </button>
+      </aside>
+
+      <div ref="stageRef" class="page-stage">
+        <div v-if="documentLoading" class="stage-feedback">
+          <NSpin size="large" />
+          <span>正在加载 PDF 文档</span>
+        </div>
+        <div v-else-if="renderError" class="stage-feedback is-error">
+          <icon-mdi-alert-circle class="text-24" />
+          <span>{{ renderError }}</span>
+        </div>
+        <div v-else class="page-scroll-shell">
+          <div v-if="!singlePagePreviewActive && !embeddedHeader" class="page-meta-row">
+            <span>第 {{ displayCurrentPage }} 页</span>
+            <span v-if="currentPage === targetPageNumber">引用定位页</span>
+            <span v-else-if="highlightCount > 0">已匹配到相关文本</span>
+            <span v-else>浏览当前页</span>
+          </div>
+
+          <div ref="pageShellRef" class="pdf-page-shell">
+            <canvas ref="canvasRef" class="pdf-canvas" />
+            <div v-if="highlightRects.length" class="pdf-highlight-overlay">
+              <div
+                v-for="(rect, index) in highlightRects"
+                :key="`${index}-${rect.left}-${rect.top}`"
+                class="pdf-highlight-rect"
+                :style="{
+                  left: `${rect.left}px`,
+                  top: `${rect.top}px`,
+                  width: `${rect.width}px`,
+                  height: `${rect.height}px`
+                }"
+              />
+            </div>
+            <div ref="textLayerRef" class="pdf-text-layer textLayer" />
+            <div v-if="pageRendering" class="page-loading-mask">
+              <NSpin size="small" />
+              <span>正在渲染页面</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <style scoped lang="scss">
 .pdf-viewer-shell {
   @apply flex h-full min-h-0 flex-col bg-white;
@@ -1584,11 +1590,7 @@ async function cleanupPdfState() {
 .pdf-highlight-rect {
   @apply absolute;
   border-radius: 6px;
-  background: linear-gradient(
-    180deg,
-    rgba(64, 169, 255, 0.12) 0%,
-    rgba(24, 144, 255, 0.28) 100%
-  );
+  background: linear-gradient(180deg, rgba(64, 169, 255, 0.12) 0%, rgba(24, 144, 255, 0.28) 100%);
   box-shadow: 0 0 0 1px rgba(24, 144, 255, 0.12);
   opacity: 0.92;
 }

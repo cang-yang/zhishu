@@ -2,8 +2,8 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { NEmpty, NSpin } from 'naive-ui';
-import FilePreview from '@/components/custom/file-preview.vue';
 import { request } from '@/service/request';
+import FilePreview from '@/components/custom/file-preview.vue';
 
 defineOptions({ name: 'ReferencePreviewPage' });
 

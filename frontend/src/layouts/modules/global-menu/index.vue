@@ -28,7 +28,11 @@ const activeMenu = computed(() => {
 });
 
 const menuRenderKey = computed(() => {
-  return [themeStore.layout.mode, themeStore.layout.reverseHorizontalMix ? 'reverse' : 'normal', appStore.isMobile ? 'mobile' : 'desktop'].join(':');
+  return [
+    themeStore.layout.mode,
+    themeStore.layout.reverseHorizontalMix ? 'reverse' : 'normal',
+    appStore.isMobile ? 'mobile' : 'desktop'
+  ].join(':');
 });
 </script>
 

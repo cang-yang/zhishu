@@ -46,7 +46,12 @@ const normalizedAvatarText = computed(() => {
   <header class="mobile-top-bar">
     <div class="mobile-top-bar__safe-area" />
     <div class="mobile-top-bar__inner">
-      <button type="button" class="mobile-top-bar__icon-button" :aria-label="leadingLabel" @click="emit('leading-click')">
+      <button
+        type="button"
+        class="mobile-top-bar__icon-button"
+        :aria-label="leadingLabel"
+        @click="emit('leading-click')"
+      >
         <SvgIcon :icon="leadingIcon" class="text-20px" />
       </button>
 

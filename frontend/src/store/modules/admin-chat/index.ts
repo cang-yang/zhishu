@@ -114,7 +114,10 @@ export const useAdminChatStore = defineStore('admin-chat-store', () => {
 
       if (!error && data) {
         sessions.value = data.sessions || [];
-        const nextSessionId = sessions.value.find(item => item.sessionId === activeSessionId.value)?.sessionId || sessions.value[0]?.sessionId || '';
+        const nextSessionId =
+          sessions.value.find(item => item.sessionId === activeSessionId.value)?.sessionId ||
+          sessions.value[0]?.sessionId ||
+          '';
         activeSessionId.value = nextSessionId;
 
         if (nextSessionId) {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FormRules } from 'naive-ui';
-import type { FlatResponseData } from '~/packages/axios/src';
 import { useFormRules, useNaiveForm } from '@/hooks/common/form';
+import type { FlatResponseData } from '~/packages/axios/src';
 
 defineOptions({
   name: 'OrgTagOperateDialog'

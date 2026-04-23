@@ -24,7 +24,10 @@ const sharedThemeSettings = {
     mixChildMenuWidth: 216
   },
   footer: { visible: false, fixed: false, height: 48, right: true }
-} satisfies Omit<App.Theme.ThemeSetting, 'themePreset' | 'themeScheme' | 'themeColor' | 'otherColor' | 'watermark' | 'tokens'>;
+} satisfies Omit<
+  App.Theme.ThemeSetting,
+  'themePreset' | 'themeScheme' | 'themeColor' | 'otherColor' | 'watermark' | 'tokens'
+>;
 
 const themePresetRecord: Record<ThemePreset, App.Theme.ThemeSetting> = {
   'aether-light': {

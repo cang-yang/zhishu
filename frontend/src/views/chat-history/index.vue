@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NScrollbar } from 'naive-ui';
-import { VueMarkdownItProvider } from '@/vendor/vue-markdown-shiki';
 import { useAdminChatStore } from '@/store/modules/admin-chat';
+import { VueMarkdownItProvider } from '@/vendor/vue-markdown-shiki';
 import ChatMessage from '../chat/modules/chat-message.vue';
 
 defineOptions({
@@ -33,9 +33,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="history-workspace admin-page-shell admin-page-shell--fixed">
+  <div class="admin-page-shell admin-page-shell--fixed history-workspace">
     <section class="history-workspace__shell">
-      <section class="history-workspace__panel app-surface-card">
+      <section class="app-surface-card history-workspace__panel">
         <NScrollbar ref="scrollbarRef" class="history-workspace__messages">
           <NSpin :show="loadingMessages" class="h-full">
             <VueMarkdownItProvider>
@@ -50,13 +50,15 @@ onMounted(async () => {
                 />
               </div>
 
-              <div v-else-if="!loadingMessages" class="history-workspace__empty app-surface-card--soft">
+              <div v-else-if="!loadingMessages" class="app-surface-card--soft history-workspace__empty">
                 <div class="history-workspace__empty-icon">
                   <SystemLogo class="text-28px" />
                 </div>
                 <div>
                   <h3 class="history-workspace__empty-title">当前没有可查看的会话消息</h3>
-                  <p class="history-workspace__empty-desc">选择左侧用户与话题后，可在这里只读查看完整对话与引用来源。</p>
+                  <p class="history-workspace__empty-desc">
+                    选择左侧用户与话题后，可在这里只读查看完整对话与引用来源。
+                  </p>
                 </div>
               </div>
             </VueMarkdownItProvider>

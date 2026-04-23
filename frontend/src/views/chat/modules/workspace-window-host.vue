@@ -234,7 +234,10 @@ function handleCycleMode() {
   >
     <template #header-extra>
       <span class="workspace-window-host__header-pill">{{ windowModeLabel }}</span>
-      <span v-if="workspaceWindow?.openedAt" class="workspace-window-host__header-pill workspace-window-host__header-pill--soft">
+      <span
+        v-if="workspaceWindow?.openedAt"
+        class="workspace-window-host__header-pill workspace-window-host__header-pill--soft"
+      >
         {{ workspaceWindow.openedAt.slice(11, 19) }}
       </span>
     </template>
@@ -247,7 +250,9 @@ function handleCycleMode() {
         </div>
         <div class="workspace-window-host__hero-meta">
           <span class="workspace-window-host__hero-tag">统一浮层体系</span>
-          <span class="workspace-window-host__hero-tag workspace-window-host__hero-tag--soft">{{ actionGroups.length || 1 }} 个分区</span>
+          <span class="workspace-window-host__hero-tag workspace-window-host__hero-tag--soft">
+            {{ actionGroups.length || 1 }} 个分区
+          </span>
         </div>
       </div>
 
@@ -260,7 +265,9 @@ function handleCycleMode() {
         <template v-else-if="workspaceWindow?.type === 'settings'">
           <article class="workspace-window-host__card workspace-window-host__card--settings">
             <h5 class="workspace-window-host__card-title">主题模式</h5>
-            <p class="workspace-window-host__card-desc">工作台优先保留深色专注体验，同时支持快速切换到浅色或跟随系统。</p>
+            <p class="workspace-window-host__card-desc">
+              工作台优先保留深色专注体验，同时支持快速切换到浅色或跟随系统。
+            </p>
             <NRadioGroup :value="themeStore.themeScheme" @update:value="handleThemeSchemeChange">
               <NSpace vertical :size="12">
                 <NRadio v-for="item in themeSchemeOptions" :key="item.value" :value="item.value">
@@ -305,12 +312,17 @@ function handleCycleMode() {
           </article>
         </template>
         <template v-else-if="workspaceWindow?.type === 'account'">
-          <article class="workspace-window-host__card workspace-window-host__card--account workspace-window-host__card--wide">
+          <article
+            class="workspace-window-host__card workspace-window-host__card--account workspace-window-host__card--wide"
+          >
             <NSpin :show="accountLoading">
               <div class="workspace-window-host__account-hero">
                 <div>
                   <h5 class="workspace-window-host__card-title">{{ authStore.userInfo.username || '当前账户' }}</h5>
-                  <p class="workspace-window-host__card-desc">账号 ID {{ authStore.userInfo.id || '--' }} · 主组织 {{ accountTags.primaryOrg || authStore.userInfo.primaryOrg || '未设置' }}</p>
+                  <p class="workspace-window-host__card-desc">
+                    账号 ID {{ authStore.userInfo.id || '--' }} · 主组织
+                    {{ accountTags.primaryOrg || authStore.userInfo.primaryOrg || '未设置' }}
+                  </p>
                 </div>
                 <NTag type="primary" round>
                   {{ authStore.userInfo.role || 'USER' }}
@@ -348,13 +360,17 @@ function handleCycleMode() {
               <NTag v-for="tag in accountTags.orgTagDetails" :key="tag.tagId" round>
                 {{ tag.name }}
               </NTag>
-              <span v-if="!accountTags.orgTagDetails.length" class="workspace-window-host__empty-inline">当前暂无组织标签信息</span>
+              <span v-if="!accountTags.orgTagDetails.length" class="workspace-window-host__empty-inline">
+                当前暂无组织标签信息
+              </span>
             </div>
           </article>
         </template>
-        <article v-else v-for="group in actionGroups" :key="group.title" class="workspace-window-host__card">
+        <article v-for="group in actionGroups" v-else :key="group.title" class="workspace-window-host__card">
           <h5 class="workspace-window-host__card-title">{{ group.title }}</h5>
-          <p class="workspace-window-host__card-desc">当前工作窗会逐步接入更完整的业务能力，现阶段先保留最小可用入口。</p>
+          <p class="workspace-window-host__card-desc">
+            当前工作窗会逐步接入更完整的业务能力，现阶段先保留最小可用入口。
+          </p>
           <ul class="workspace-window-host__list">
             <li v-for="item in group.items" :key="item">{{ item }}</li>
           </ul>
@@ -363,12 +379,16 @@ function handleCycleMode() {
 
       <div class="workspace-window-host__footnote">
         <span class="workspace-window-host__footnote-label">Stage Notes</span>
-        <p class="workspace-window-host__footnote-text">当前工作窗与聊天主舞台共享统一暗色玻璃层级，后续功能模块将继续在该容器内按分区增量接入。</p>
+        <p class="workspace-window-host__footnote-text">
+          当前工作窗与聊天主舞台共享统一暗色玻璃层级，后续功能模块将继续在该容器内按分区增量接入。
+        </p>
       </div>
 
       <div class="workspace-window-host__footbar">
         <span class="workspace-window-host__footbar-pill">当前模式：{{ windowModeLabel }}</span>
-        <span class="workspace-window-host__footbar-pill workspace-window-host__footbar-pill--soft">支持标准 / 沉浸 / 全屏循环切换</span>
+        <span class="workspace-window-host__footbar-pill workspace-window-host__footbar-pill--soft">
+          支持标准 / 沉浸 / 全屏循环切换
+        </span>
       </div>
     </section>
   </WorkspaceWindow>

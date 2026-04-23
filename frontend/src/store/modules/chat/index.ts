@@ -111,7 +111,13 @@ type ChatConnectionEvent = {
   wsSessionId?: string;
 };
 
-type ChatSocketEvent = ChatAcceptedEvent | ChatChunkEvent | ChatCompletedEvent | ChatErrorEvent | ChatStoppedEvent | ChatConnectionEvent;
+type ChatSocketEvent =
+  | ChatAcceptedEvent
+  | ChatChunkEvent
+  | ChatCompletedEvent
+  | ChatErrorEvent
+  | ChatStoppedEvent
+  | ChatConnectionEvent;
 
 const CHAT_HOME_DRAFT_KEY = '__home__';
 
@@ -376,7 +382,9 @@ export const useChatStore = defineStore(SetupStoreId.Chat, () => {
     const index = sessionList.value.findIndex(item => item.sessionId === normalized.sessionId);
     if (index >= 0) sessionList.value[index] = normalized;
     else sessionList.value.unshift(normalized);
-    sessionList.value = [...sessionList.value].sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+    sessionList.value = [...sessionList.value].sort((a, b) =>
+      String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))
+    );
     if (!activeSessionId.value) activeSessionId.value = normalized.sessionId;
   }
 
@@ -563,7 +571,10 @@ export const useChatStore = defineStore(SetupStoreId.Chat, () => {
   }
 
   async function deleteMessage(messageId: string) {
-    const { error, data } = await request<DeleteMessageResponse>({ url: `users/chat/messages/${messageId}`, method: 'DELETE' });
+    const { error, data } = await request<DeleteMessageResponse>({
+      url: `users/chat/messages/${messageId}`,
+      method: 'DELETE'
+    });
     if (!error && data) {
       const target = normalizeMessage(data.message as any);
       removeMessage(target.sessionId, target.messageId);
@@ -629,7 +640,9 @@ export const useChatStore = defineStore(SetupStoreId.Chat, () => {
       detail: `request:${requestId}`
     });
     activeRequestId.value = requestId;
-    rawWsSend(JSON.stringify({ type: 'chat.regenerate', requestId, sessionId: message.sessionId, messageId: message.messageId }));
+    rawWsSend(
+      JSON.stringify({ type: 'chat.regenerate', requestId, sessionId: message.sessionId, messageId: message.messageId })
+    );
   }
 
   async function stopMessage() {
@@ -639,12 +652,14 @@ export const useChatStore = defineStore(SetupStoreId.Chat, () => {
       messageId: activeStreamingMessageId.value,
       detail: `request:${activeRequestId.value}`
     });
-    rawWsSend(JSON.stringify({
-      type: 'chat.stop',
-      requestId: activeRequestId.value,
-      sessionId: activeSessionId.value,
-      messageId: activeStreamingMessageId.value
-    }));
+    rawWsSend(
+      JSON.stringify({
+        type: 'chat.stop',
+        requestId: activeRequestId.value,
+        sessionId: activeSessionId.value,
+        messageId: activeStreamingMessageId.value
+      })
+    );
   }
 
   function handleConnectionEvent(event: ChatConnectionEvent) {
@@ -653,7 +668,10 @@ export const useChatStore = defineStore(SetupStoreId.Chat, () => {
       handshakeConfirmed.value = true;
       wsSessionId.value = currentWsSessionId;
     }
-    pushLifecycleLog('connection', { sessionId: event.sessionId, detail: currentWsSessionId ? 'handshake-confirmed' : 'no-session-id' });
+    pushLifecycleLog('connection', {
+      sessionId: event.sessionId,
+      detail: currentWsSessionId ? 'handshake-confirmed' : 'no-session-id'
+    });
   }
 
   function handleAcceptedEvent(event: ChatAcceptedEvent) {
@@ -752,7 +770,12 @@ export const useChatStore = defineStore(SetupStoreId.Chat, () => {
   }
 
   function isKnownSocketEvent(event: unknown): event is ChatSocketEvent {
-    return Boolean(event && typeof event === 'object' && 'type' in (event as Record<string, unknown>) && CHAT_SOCKET_EVENT_TYPES.has((event as ChatSocketEvent).type));
+    return Boolean(
+      event &&
+        typeof event === 'object' &&
+        'type' in (event as Record<string, unknown>) &&
+        CHAT_SOCKET_EVENT_TYPES.has((event as ChatSocketEvent).type)
+    );
   }
 
   function handleSocketEvent(event: ChatSocketEvent) {
@@ -810,22 +833,28 @@ export const useChatStore = defineStore(SetupStoreId.Chat, () => {
     wsClose(1000, 'auth-reset');
   }
 
-  watch(socketUrl, url => {
-    resetConnectionState();
-    if (!url) {
-      wsClose();
-      clearRateLimitCountdown();
-      return;
-    }
-    wsOpen();
-  }, { immediate: true });
+  watch(
+    socketUrl,
+    url => {
+      resetConnectionState();
+      if (!url) {
+        wsClose();
+        clearRateLimitCountdown();
+        return;
+      }
+      wsOpen();
+    },
+    { immediate: true }
+  );
 
   watch(wsData, val => {
     if (!val) return;
     try {
       const parsed = JSON.parse(val) as unknown;
       if (!isKnownSocketEvent(parsed)) {
-        pushLifecycleLog('message.unknown', { detail: typeof parsed === 'object' ? JSON.stringify(parsed) : String(parsed) });
+        pushLifecycleLog('message.unknown', {
+          detail: typeof parsed === 'object' ? JSON.stringify(parsed) : String(parsed)
+        });
         return;
       }
       handleSocketEvent(parsed);

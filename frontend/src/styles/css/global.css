@@ -28,8 +28,7 @@ html.light {
   --color-fill-active: rgba(15, 23, 42, 0.08);
   --app-layout-bg:
     radial-gradient(circle at top left, rgba(77, 109, 255, 0.1), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.08), transparent 20%),
-    #f3f6fb;
+    radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.08), transparent 20%), #f3f6fb;
   --app-elevated-bg: rgba(255, 255, 255, 0.96);
   --app-surface-bg: rgba(255, 255, 255, 0.86);
   --app-sidebar-bg: rgba(255, 255, 255, 0.82);
@@ -59,8 +58,7 @@ html.dark {
   --color-fill-active: rgba(255, 255, 255, 0.08);
   --app-layout-bg:
     radial-gradient(circle at top left, rgba(77, 109, 255, 0.06), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.05), transparent 20%),
-    #070a10;
+    radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.05), transparent 20%), #070a10;
   --app-elevated-bg: rgba(9, 12, 18, 0.96);
   --app-surface-bg: rgba(8, 12, 18, 0.78);
   --app-sidebar-bg: rgba(8, 11, 18, 0.92);
@@ -95,12 +93,7 @@ button,
 input,
 textarea,
 select {
-  font-family:
-    Inter,
-    'PingFang SC',
-    'Microsoft YaHei',
-    system-ui,
-    sans-serif;
+  font-family: Inter, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
 }
 
 #app {

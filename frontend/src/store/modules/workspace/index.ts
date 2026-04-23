@@ -1,6 +1,6 @@
-import type { RouteKey } from '@elegant-router/types';
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
+import type { RouteKey } from '@elegant-router/types';
 import { SetupStoreId } from '@/enum';
 import { useAuthStore } from '../auth';
 
@@ -12,7 +12,15 @@ type SettingsSectionKey = 'general' | 'account' | 'about';
 
 type KnowledgeCategoryKey = 'all' | 'document' | 'sheet';
 
-type AdminSectionKey = 'user' | 'chat-history' | 'model-provider' | 'org-tag' | 'invite-code' | 'usage-monitor' | 'recharge' | 'recharge-manage';
+type AdminSectionKey =
+  | 'user'
+  | 'chat-history'
+  | 'model-provider'
+  | 'org-tag'
+  | 'invite-code'
+  | 'usage-monitor'
+  | 'recharge'
+  | 'recharge-manage';
 
 type WorkspaceModuleItem = {
   key: WorkspaceModuleKey;

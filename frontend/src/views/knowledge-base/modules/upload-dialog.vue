@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useFormRules, useNaiveForm } from '@/hooks/common/form';
+import { uploadAccept } from '@/constants/common';
 import { useAuthStore } from '@/store/modules/auth';
 import { useKnowledgeBaseStore } from '@/store/modules/knowledge-base';
-import { uploadAccept } from '@/constants/common';
+import { useFormRules, useNaiveForm } from '@/hooks/common/form';
 
 defineOptions({
   name: 'UploadDialog'
@@ -125,7 +125,14 @@ function onUpdate(option: unknown) {
     <header class="upload-dialog-mobile__topbar">
       <button type="button" class="upload-dialog-mobile__text-button" @click="close">返回</button>
       <strong>文件上传</strong>
-      <button type="button" class="upload-dialog-mobile__text-button upload-dialog-mobile__text-button--primary" :disabled="submitDisabled" @click="handleSubmit">保存</button>
+      <button
+        type="button"
+        class="upload-dialog-mobile__text-button upload-dialog-mobile__text-button--primary"
+        :disabled="submitDisabled"
+        @click="handleSubmit"
+      >
+        保存
+      </button>
     </header>
 
     <div class="upload-dialog-mobile__body">
@@ -167,7 +174,10 @@ function onUpdate(option: unknown) {
           <div v-if="fileSizeLimitError" class="upload-dialog-mobile__feedback upload-dialog-mobile__feedback--error">
             {{ fileSizeLimitError }}
           </div>
-          <div v-else-if="!authStore.isAdmin && model.uploadMaxSizeMb" class="upload-dialog-mobile__feedback upload-dialog-mobile__feedback--warning">
+          <div
+            v-else-if="!authStore.isAdmin && model.uploadMaxSizeMb"
+            class="upload-dialog-mobile__feedback upload-dialog-mobile__feedback--warning"
+          >
             当前组织限制非管理员上传文件不超过 {{ model.uploadMaxSizeMb }} MB
           </div>
         </NFormItem>

@@ -78,11 +78,17 @@ function handleBackdropClose() {
 
 <template>
   <Teleport to="body">
-    <transition name="workspace-window">
+    <Transition name="workspace-window">
       <div v-if="visible" class="workspace-window" :class="[`workspace-window--${mode}`]">
         <div class="workspace-window__backdrop" @click="handleBackdropClose" />
 
-        <section class="workspace-window__panel" :style="panelStyle" role="dialog" aria-modal="true" :aria-label="title">
+        <section
+          class="workspace-window__panel"
+          :style="panelStyle"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="title"
+        >
           <header class="workspace-window__header">
             <div class="workspace-window__heading">
               <span class="workspace-window__badge">{{ badge }}</span>
@@ -115,7 +121,7 @@ function handleBackdropClose() {
           </div>
         </section>
       </div>
-    </transition>
+    </Transition>
   </Teleport>
 </template>
 
@@ -132,9 +138,7 @@ function handleBackdropClose() {
   &__backdrop {
     position: absolute;
     inset: 0;
-    background:
-      radial-gradient(circle at top, rgba(79, 124, 255, 0.16), transparent 42%),
-      rgba(15, 23, 42, 0.52);
+    background: radial-gradient(circle at top, rgba(79, 124, 255, 0.16), transparent 42%), rgba(15, 23, 42, 0.52);
     backdrop-filter: blur(18px);
   }
 

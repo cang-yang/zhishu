@@ -177,21 +177,11 @@ function toggleTheme() {
       </div>
 
       <div class="user-panel__group">
-        <button
-          v-if="authStore.isAdmin"
-          type="button"
-          class="user-panel__action"
-          @click="navigateTo('chat-history')"
-        >
+        <button v-if="authStore.isAdmin" type="button" class="user-panel__action" @click="navigateTo('chat-history')">
           <SvgIcon icon="solar:history-linear" class="text-18px" />
           <span>会话审计</span>
         </button>
-        <button
-          v-if="authStore.isAdmin"
-          type="button"
-          class="user-panel__action"
-          @click="navigateTo('usage-monitor')"
-        >
+        <button v-if="authStore.isAdmin" type="button" class="user-panel__action" @click="navigateTo('usage-monitor')">
           <SvgIcon icon="solar:chart-2-linear" class="text-18px" />
           <span>用量监控</span>
         </button>

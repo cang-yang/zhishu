@@ -3,16 +3,16 @@ import type { UploadFileInfo } from 'naive-ui';
 import { NButton, NDropdown, NProgress, NSpin, NTag, NUpload } from 'naive-ui';
 import { uploadAccept } from '@/constants/common';
 import { fakePaginationRequest } from '@/service/request';
-import { UploadStatus } from '@/enum';
+import { useAuthStore } from '@/store/modules/auth';
+import { useWorkspaceStore } from '@/store/modules/workspace';
+import { useKnowledgeBaseStore } from '@/store/modules/knowledge-base';
 import { useTable } from '@/hooks/common/table';
+import { fileSize, getFileExt } from '@/utils/common';
+import { UploadStatus } from '@/enum';
 import FloatingMenu from '@/components/custom/FloatingMenu.vue';
 import SvgIcon from '@/components/custom/svg-icon.vue';
 import FilePreview from '@/components/custom/file-preview.vue';
 import WorkspaceWindow from '@/components/custom/workspace-window.vue';
-import { useAuthStore } from '@/store/modules/auth';
-import { useWorkspaceStore } from '@/store/modules/workspace';
-import { useKnowledgeBaseStore } from '@/store/modules/knowledge-base';
-import { fileSize, getFileExt } from '@/utils/common';
 import UploadDialog from './modules/upload-dialog.vue';
 
 defineOptions({
@@ -198,7 +198,10 @@ function resumeUpload(row: Api.KnowledgeBase.UploadTask) {
   store.startUpload();
 }
 
-async function onBeforeUpload(options: { file: UploadFileInfo; fileList: UploadFileInfo[] }, row: Api.KnowledgeBase.UploadTask) {
+async function onBeforeUpload(
+  options: { file: UploadFileInfo; fileList: UploadFileInfo[] },
+  row: Api.KnowledgeBase.UploadTask
+) {
   const md5 = await calculateMD5(options.file.file!);
   if (md5 !== row.fileMd5) {
     window.$message?.error('两次上传的文件不一致');
@@ -314,8 +317,13 @@ const mobileFileActionOptions = computed(() => {
 const filteredTasks = computed(() => {
   const normalizedKeyword = keyword.value.trim().toLowerCase();
   return tasks.value.filter(item => {
-    const categoryMatched = knowledgeCategory.value === 'all' || getFileCategory(item.fileName) === knowledgeCategory.value;
-    const keywordMatched = !normalizedKeyword || String(item.fileName || '').toLowerCase().includes(normalizedKeyword);
+    const categoryMatched =
+      knowledgeCategory.value === 'all' || getFileCategory(item.fileName) === knowledgeCategory.value;
+    const keywordMatched =
+      !normalizedKeyword ||
+      String(item.fileName || '')
+        .toLowerCase()
+        .includes(normalizedKeyword);
     return categoryMatched && keywordMatched;
   });
 });
@@ -366,7 +374,9 @@ onBeforeUnmount(() => {
 
       <div class="knowledge-base-page__toolbar">
         <input v-model="keyword" type="text" class="knowledge-base-page__search" placeholder="搜索文件名..." />
-        <span class="knowledge-base-page__summary">共 {{ filteredTasks.length }} 个文件 · 总计 {{ totalSizeLabel }} · 已消耗 {{ totalTokensLabel }} Token</span>
+        <span class="knowledge-base-page__summary">
+          共 {{ filteredTasks.length }} 个文件 · 总计 {{ totalSizeLabel }} · 已消耗 {{ totalTokensLabel }} Token
+        </span>
       </div>
 
       <div class="knowledge-base-page__category-row">
@@ -419,19 +429,17 @@ onBeforeUnmount(() => {
               <span>{{ fileSize(row.totalSize) }}</span>
               <span>
                 <template v-if="row.status === UploadStatus.Completed">
-                  {{ Number(row.actualChunkCount || row.estimatedChunkCount || 0).toLocaleString() }}/{{ Number(row.actualChunkCount || row.estimatedChunkCount || 0).toLocaleString() }}
+                  {{ Number(row.actualChunkCount || row.estimatedChunkCount || 0).toLocaleString() }}/{{
+                    Number(row.actualChunkCount || row.estimatedChunkCount || 0).toLocaleString()
+                  }}
                 </template>
-                <template v-else>
-                  索引中...
-                </template>
+                <template v-else>索引中...</template>
               </span>
               <span>
                 <template v-if="row.actualEmbeddingTokens || row.estimatedEmbeddingTokens">
                   {{ Number(row.actualEmbeddingTokens || row.estimatedEmbeddingTokens || 0).toLocaleString() }}
                 </template>
-                <template v-else>
-                  -
-                </template>
+                <template v-else>-</template>
               </span>
               <span>{{ row.orgTagName || row.orgTag || '-' }}</span>
               <span>
@@ -444,13 +452,16 @@ onBeforeUnmount(() => {
                 <span>{{ fileSize(row.totalSize) }}</span>
                 <span>
                   <template v-if="row.status === UploadStatus.Completed">
-                    {{ Number(row.actualChunkCount || row.estimatedChunkCount || 0).toLocaleString() }}/{{ Number(row.actualChunkCount || row.estimatedChunkCount || 0).toLocaleString() }}
+                    {{ Number(row.actualChunkCount || row.estimatedChunkCount || 0).toLocaleString() }}/{{
+                      Number(row.actualChunkCount || row.estimatedChunkCount || 0).toLocaleString()
+                    }}
                   </template>
-                  <template v-else>
-                    索引中...
-                  </template>
+                  <template v-else>索引中...</template>
                 </span>
-                <span>Token: {{ Number(row.actualEmbeddingTokens || row.estimatedEmbeddingTokens || 0).toLocaleString() || '-' }}</span>
+                <span>
+                  Token:
+                  {{ Number(row.actualEmbeddingTokens || row.estimatedEmbeddingTokens || 0).toLocaleString() || '-' }}
+                </span>
                 <span>{{ row.orgTagName || row.orgTag || '-' }} · {{ renderStatusText(row) }}</span>
               </div>
 
@@ -460,10 +471,10 @@ onBeforeUnmount(() => {
               </div>
 
               <div v-if="row.status === UploadStatus.Break" class="knowledge-base-page__resume-row">
-               <template v-if="row.file">
-                 <NButton type="primary" size="small" ghost @click.stop="resumeUpload(row)">续传</NButton>
-               </template>
-               <template v-else>
+                <template v-if="row.file">
+                  <NButton type="primary" size="small" ghost @click.stop="resumeUpload(row)">续传</NButton>
+                </template>
+                <template v-else>
                   <div @click.stop>
                     <NUpload
                       :show-file-list="false"
@@ -527,7 +538,6 @@ onBeforeUnmount(() => {
         @close="closeFilePreview"
       />
     </WorkspaceWindow>
-
   </div>
 </template>
 
@@ -719,7 +729,6 @@ onBeforeUnmount(() => {
     color: var(--app-text-secondary);
     text-align: center;
   }
-
 }
 
 :deep(.workspace-window__body) {
@@ -822,8 +831,6 @@ onBeforeUnmount(() => {
       font-size: 12px;
       line-height: 1.6;
     }
-
   }
-
 }
 </style>

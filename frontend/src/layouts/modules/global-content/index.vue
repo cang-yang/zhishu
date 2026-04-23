@@ -54,10 +54,9 @@ function resetScroll() {
             {
               'global-page-view--padded': showPadding && !isWorkbenchRoute,
               'global-page-view--workbench': isWorkbenchRoute
-            },
-            'global-page-view'
+            }
           ]"
-          class="flex-grow bg-layout transition-300"
+          class="global-page-view flex-grow bg-layout transition-300"
         />
       </KeepAlive>
     </Transition>

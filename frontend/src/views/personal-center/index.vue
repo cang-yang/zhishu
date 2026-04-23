@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, h } from 'vue';
+import { computed, h, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { NTag } from 'naive-ui';
 import { useAppStore } from '@/store/modules/app';
@@ -327,15 +327,41 @@ function formatQuotaFooter(quota: any): string {
         <div class="settings-page__section">
           <div class="settings-page__section-title">主题模式</div>
           <div class="settings-page__choice-row">
-            <button type="button" class="settings-page__choice" :class="{ 'is-active': themeScheme === 'light' }" @click="handleThemeChange('light')">☀ 浅色</button>
-            <button type="button" class="settings-page__choice" :class="{ 'is-active': themeScheme === 'dark' }" @click="handleThemeChange('dark')">🌙 深色</button>
-            <button type="button" class="settings-page__choice" :class="{ 'is-active': themeScheme === 'auto' }" @click="handleThemeChange('auto')">💻 跟随系统</button>
+            <button
+              type="button"
+              class="settings-page__choice"
+              :class="{ 'is-active': themeScheme === 'light' }"
+              @click="handleThemeChange('light')"
+            >
+              ☀ 浅色
+            </button>
+            <button
+              type="button"
+              class="settings-page__choice"
+              :class="{ 'is-active': themeScheme === 'dark' }"
+              @click="handleThemeChange('dark')"
+            >
+              🌙 深色
+            </button>
+            <button
+              type="button"
+              class="settings-page__choice"
+              :class="{ 'is-active': themeScheme === 'auto' }"
+              @click="handleThemeChange('auto')"
+            >
+              💻 跟随系统
+            </button>
           </div>
         </div>
 
         <div class="settings-page__section">
           <div class="settings-page__section-title">界面语言</div>
-          <NSelect :value="appStore.locale" :options="appStore.localeOptions" class="settings-page__select" @update:value="handleLocaleChange" />
+          <NSelect
+            :value="appStore.locale"
+            :options="appStore.localeOptions"
+            class="settings-page__select"
+            @update:value="handleLocaleChange"
+          />
         </div>
 
         <div class="settings-page__section settings-page__switch-row">
@@ -359,7 +385,9 @@ function formatQuotaFooter(quota: any): string {
             </NAvatar>
             <div>
               <div class="settings-page__hero-name">{{ userInfo.username }}</div>
-              <div class="settings-page__hero-meta">账号 ID {{ userInfo.id }} · 主组织 {{ tags.primaryOrg || userInfo.primaryOrg || '-' }}</div>
+              <div class="settings-page__hero-meta">
+                账号 ID {{ userInfo.id }} · 主组织 {{ tags.primaryOrg || userInfo.primaryOrg || '-' }}
+              </div>
             </div>
           </div>
           <NTag type="primary" size="large">{{ roleLabel }}</NTag>
@@ -421,19 +449,29 @@ function formatQuotaFooter(quota: any): string {
           <div class="settings-page__section-title">Token 变动记录</div>
           <NSpin :show="tokenRecordLoading">
             <div v-if="isMobileViewport && tokenRecords.length > 0" class="settings-page__record-list">
-              <article v-for="row in tokenRecords" :key="`${row.createdAt}-${row.recordDate}-${row.amount}`" class="settings-page__record-card">
+              <article
+                v-for="row in tokenRecords"
+                :key="`${row.createdAt}-${row.recordDate}-${row.amount}`"
+                class="settings-page__record-card"
+              >
                 <div class="flex items-center justify-between gap-12px">
                   <strong>{{ row.recordDate }}</strong>
                   <div class="flex items-center gap-8px">
-                    <NTag :type="getTokenTypeMeta(row.tokenType).type" size="small">{{ getTokenTypeMeta(row.tokenType).text }}</NTag>
-                    <NTag :type="getChangeTypeMeta(row.changeType).type" size="small">{{ getChangeTypeMeta(row.changeType).text }}</NTag>
+                    <NTag :type="getTokenTypeMeta(row.tokenType).type" size="small">
+                      {{ getTokenTypeMeta(row.tokenType).text }}
+                    </NTag>
+                    <NTag :type="getChangeTypeMeta(row.changeType).type" size="small">
+                      {{ getChangeTypeMeta(row.changeType).text }}
+                    </NTag>
                   </div>
                 </div>
                 <div class="settings-page__record-amount">
                   {{ row.changeType === 'INCREASE' ? '+' : '-' }}{{ row.amount.toLocaleString() }}
                 </div>
                 <div class="settings-page__record-meta">
-                  <span>{{ (row.balanceBefore ?? 0).toLocaleString() }} → {{ (row.balanceAfter ?? 0).toLocaleString() }}</span>
+                  <span>
+                    {{ (row.balanceBefore ?? 0).toLocaleString() }} → {{ (row.balanceAfter ?? 0).toLocaleString() }}
+                  </span>
                   <span>原因：{{ row.reason || '-' }}</span>
                   <span>请求次数：{{ row.requestCount?.toLocaleString() || '0' }}</span>
                   <span>{{ new Date(row.createdAt).toLocaleString('zh-CN') }}</span>
@@ -477,7 +515,9 @@ function formatQuotaFooter(quota: any): string {
 
         <div class="settings-page__about-card">
           <h3>智枢 AI</h3>
-          <p>当前版本以低调极客风重构为核心，采用统一左侧单列导航与右侧主舞台布局，聊天、知识库、设置与管理功能共享一致的视觉语言。</p>
+          <p>
+            当前版本以低调极客风重构为核心，采用统一左侧单列导航与右侧主舞台布局，聊天、知识库、设置与管理功能共享一致的视觉语言。
+          </p>
           <div class="settings-page__about-meta">
             <span>主题：统一 CSS 变量</span>
             <span>布局：单列侧边导航</span>

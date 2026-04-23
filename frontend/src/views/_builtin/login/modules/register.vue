@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { inviteChannelConfig } from '@/constants/invite-channel';
-import { useFormRules, useNaiveForm } from '@/hooks/common/form';
-import { useRouterPush } from '@/hooks/common/router';
 import { fetchRegister } from '@/service/api';
 import { normalizeBackendMessage } from '@/service/request/shared';
+import { useFormRules, useNaiveForm } from '@/hooks/common/form';
+import { useRouterPush } from '@/hooks/common/router';
 import { $t } from '@/locales';
 
 defineOptions({

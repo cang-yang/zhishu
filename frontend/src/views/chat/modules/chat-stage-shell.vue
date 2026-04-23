@@ -33,9 +33,7 @@ defineOptions({
     flex-direction: column;
     border: 1px solid var(--app-border);
     border-radius: 30px;
-    background:
-      radial-gradient(circle at top, rgba(59, 130, 246, 0.08), transparent 26%),
-      var(--app-surface-bg);
+    background: radial-gradient(circle at top, rgba(59, 130, 246, 0.08), transparent 26%), var(--app-surface-bg);
     box-shadow: var(--app-surface-shadow);
   }
 
@@ -79,7 +77,11 @@ defineOptions({
       left: 0;
       z-index: 18;
       padding: 8px 12px 12px;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, color-mix(in srgb, var(--app-layout-bg) 94%, transparent) 36%);
+      background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0) 0%,
+        color-mix(in srgb, var(--app-layout-bg) 94%, transparent) 36%
+      );
     }
   }
 }

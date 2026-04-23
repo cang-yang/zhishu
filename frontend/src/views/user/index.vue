@@ -1,9 +1,9 @@
 <script setup lang="tsx">
 import { onActivated, onBeforeUnmount, onMounted, ref } from 'vue';
-import dayjs from 'dayjs';
 import { NButton, NTag } from 'naive-ui';
-import { useTable } from '@/hooks/common/table';
+import dayjs from 'dayjs';
 import { useAppStore } from '@/store/modules/app';
+import { useTable } from '@/hooks/common/table';
 import UserSearch from './modules/user-search.vue';
 import OrgTagSettingDialog from './modules/org-tag-setting-dialog.vue';
 
@@ -13,6 +13,26 @@ const isMobileViewport = ref(false);
 function syncMobileViewport() {
   if (typeof window === 'undefined') return;
   isMobileViewport.value = window.innerWidth <= 768;
+}
+
+// [Fix] 配额显示辅助
+function renderQuotaMain(quota: any): string {
+  if (!quota) return '未配置';
+  const used = Number(quota.usedTokens || 0);
+  const limit = Number(quota.limitTokens || 0);
+  const remaining = Number(quota.remainingTokens || 0);
+  if (limit <= 0 && remaining > 0) return `余额 ${remaining.toLocaleString()}`;
+  if (limit <= 0) return '未配置额度';
+  return `${Math.max(0, used).toLocaleString()} / ${limit.toLocaleString()}`;
+}
+function renderQuotaSub(quota: any): string {
+  if (!quota) return '';
+  const remaining = Number(quota.remainingTokens || 0);
+  const limit = Number(quota.limitTokens || 0);
+  const requests = Number(quota.requestCount || 0).toLocaleString();
+  if (limit <= 0 && remaining > 0) return `无上限 · ${requests} 次`;
+  if (limit <= 0) return '';
+  return `剩余 ${Math.max(0, remaining).toLocaleString()} · ${requests} 次`;
 }
 
 function apiFn(params: Api.User.SearchParams) {
@@ -85,8 +105,8 @@ const { columns, columnChecks, data, getData, loading, mobilePagination, searchP
         }
         return (
           <div class="flex flex-col gap-1 text-xs">
-            <span>{Number(quota.usedTokens || 0).toLocaleString()} / {Number(quota.limitTokens || 0).toLocaleString()}</span>
-            <span class="text-stone-400">剩余 {Number(quota.remainingTokens || 0).toLocaleString()} · {quota.requestCount} 次</span>
+            <span>{renderQuotaMain(quota)}</span>
+            <span class="text-stone-400">{renderQuotaSub(quota)}</span>
           </div>
         );
       }
@@ -102,8 +122,8 @@ const { columns, columnChecks, data, getData, loading, mobilePagination, searchP
         }
         return (
           <div class="flex flex-col gap-1 text-xs">
-            <span>{Number(quota.usedTokens || 0).toLocaleString()} / {Number(quota.limitTokens || 0).toLocaleString()}</span>
-            <span class="text-stone-400">剩余 {Number(quota.remainingTokens || 0).toLocaleString()} · {quota.requestCount} 次</span>
+            <span>{renderQuotaMain(quota)}</span>
+            <span class="text-stone-400">{renderQuotaSub(quota)}</span>
           </div>
         );
       }
@@ -163,7 +183,12 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="user-page__tag-row">
-            <NTag v-for="tag in row.orgTags" :key="tag.tagId" :type="tag.tagId === row.primaryOrg ? 'primary' : 'default'" size="small">
+            <NTag
+              v-for="tag in row.orgTags"
+              :key="tag.tagId"
+              :type="tag.tagId === row.primaryOrg ? 'primary' : 'default'"
+              size="small"
+            >
               {{ tag.name }}
             </NTag>
           </div>
@@ -174,20 +199,16 @@ onBeforeUnmount(() => {
             <span>
               LLM：
               <template v-if="row.usage?.llm?.enabled">
-                {{ Number(row.usage?.llm?.usedTokens || 0).toLocaleString() }} / {{ Number(row.usage?.llm?.limitTokens || 0).toLocaleString() }}
+                {{ renderQuotaMain(row.usage?.llm) }}
               </template>
-              <template v-else>
-                未启用
-              </template>
+              <template v-else>未启用</template>
             </span>
             <span>
               Emb：
               <template v-if="row.usage?.embedding?.enabled">
-                {{ Number(row.usage?.embedding?.usedTokens || 0).toLocaleString() }} / {{ Number(row.usage?.embedding?.limitTokens || 0).toLocaleString() }}
+                {{ renderQuotaMain(row.usage?.embedding) }}
               </template>
-              <template v-else>
-                未启用
-              </template>
+              <template v-else>未启用</template>
             </span>
           </div>
 

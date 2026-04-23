@@ -13,12 +13,12 @@ const props = defineProps<{
     deletable?: boolean;
     regeneratable?: boolean;
     lifecycle?: 'draft' | 'sent' | 'streaming' | 'finished' | 'error' | 'cancelled';
-  },
-  sessionId?: string,
-  retrievalQueryFallback?: string,
-  readonly?: boolean,
-  userDisplayName?: string,
-  assistantDisplayName?: string
+  };
+  sessionId?: string;
+  retrievalQueryFallback?: string;
+  readonly?: boolean;
+  userDisplayName?: string;
+  assistantDisplayName?: string;
 }>();
 
 const isUserMessage = computed(() => props.msg.role === 'user');
@@ -45,13 +45,20 @@ function syncMobileViewport() {
 
 const chatStore = useChatStore();
 const canDelete = computed(() => !props.readonly && props.msg.deletable !== false && Boolean(props.msg.messageId));
-const canRegenerate = computed(() => !props.readonly && isAssistantMessage.value && Boolean(props.msg.regeneratable) && Boolean(props.msg.messageId));
-const showActions = computed(() => !props.readonly && (canDelete.value || canRegenerate.value || Boolean(props.msg.content)));
+const canRegenerate = computed(
+  () => !props.readonly && isAssistantMessage.value && Boolean(props.msg.regeneratable) && Boolean(props.msg.messageId)
+);
+const showActions = computed(
+  () => !props.readonly && (canDelete.value || canRegenerate.value || Boolean(props.msg.content))
+);
 const isMobileViewport = ref(false);
 const activeMobileActionMessageId = inject('activeMobileActionMessageId', ref<string | null>(null));
 const setActiveMobileActionMessageId = inject<(id: string | null) => void>('setActiveMobileActionMessageId', () => {});
 const messageActionId = computed(() => {
-  return props.msg.messageId || `${props.sessionId || 'chat'}-${props.msg.role}-${props.msg.timestamp || ''}-${(props.msg.content || '').slice(0, 24)}`;
+  return (
+    props.msg.messageId ||
+    `${props.sessionId || 'chat'}-${props.msg.role}-${props.msg.timestamp || ''}-${(props.msg.content || '').slice(0, 24)}`
+  );
 });
 const isMobileActionExpanded = computed(() => {
   return isMobileViewport.value && showActions.value && activeMobileActionMessageId.value === messageActionId.value;
@@ -220,10 +227,7 @@ function processSourceLinks(text: string): string {
     `来源#(\\d+):\\s*([^|;；,，、。！？!?\\n\\r]+?)\\s*\\|\\s*MD5:\\s*([a-fA-F0-9]+)${entryBoundary}`,
     'g'
   );
-  const simplePattern = new RegExp(
-    `来源#(\\d+):\\s*([^<>\\n\\r|;；,，、。！？!?]+?)${entryBoundary}`,
-    'g'
-  );
+  const simplePattern = new RegExp(`来源#(\\d+):\\s*([^<>\\n\\r|;；,，、。！？!?]+?)${entryBoundary}`, 'g');
 
   let processedText = replaceSourceEntries(pagePattern, text, ([sourceNum, fileName, pageNum]) => {
     return createSourceLink(sourceNum, fileName, {
@@ -303,9 +307,11 @@ function findSourceFileByText(text: string) {
   const normalized = text.trim();
   if (!normalized) return null;
 
-  return sourceFiles.value.find(file => {
-    return normalized.includes(file.fileName) || file.fileName.includes(normalized);
-  }) || null;
+  return (
+    sourceFiles.value.find(file => {
+      return normalized.includes(file.fileName) || file.fileName.includes(normalized);
+    }) || null
+  );
 }
 
 function getPersistedDetail(referenceNumber: number) {
@@ -322,13 +328,7 @@ function buildPreviewPayload(options: {
     fileMd5?: string | null;
   };
 }) {
-  const {
-    fileName,
-    referenceNumber,
-    sessionId,
-    fallbackRetrievalQuery,
-    payload
-  } = options;
+  const { fileName, referenceNumber, sessionId, fallbackRetrievalQuery, payload } = options;
 
   openReferencePreviewOverlay({
     fileName: payload.fileName || fileName,
@@ -369,8 +369,9 @@ async function fetchReferenceDetail(sessionId: string, referenceNumber: number) 
 
 async function resolveReferenceDetail(sessionId: string | undefined, referenceNumber: number) {
   const persistedDetail = getPersistedDetail(referenceNumber);
-  const needRemoteDetail = sessionId
-    && (!persistedDetail?.retrievalQuery || !persistedDetail?.matchedChunkText || !persistedDetail?.evidenceSnippet);
+  const needRemoteDetail =
+    sessionId &&
+    (!persistedDetail?.retrievalQuery || !persistedDetail?.matchedChunkText || !persistedDetail?.evidenceSnippet);
 
   const detail = needRemoteDetail ? await fetchReferenceDetail(sessionId, referenceNumber) : null;
   return { persistedDetail, detail };
@@ -379,10 +380,13 @@ async function resolveReferenceDetail(sessionId: string | undefined, referenceNu
 // 处理内容点击事件（事件委托）
 function handleContentClick(event: MouseEvent) {
   const targetNode = event.target;
-  const targetElement = targetNode instanceof Element ? targetNode : targetNode instanceof Node ? targetNode.parentElement : null;
+  const targetElement =
+    targetNode instanceof Element ? targetNode : targetNode instanceof Node ? targetNode.parentElement : null;
   if (!targetElement) return;
 
-  const sourceLink = targetElement.closest('a.source-file-link, a[data-reference="true"], a[data-file-id]') as HTMLElement | null;
+  const sourceLink = targetElement.closest(
+    'a.source-file-link, a[data-reference="true"], a[data-file-id]'
+  ) as HTMLElement | null;
   if (!sourceLink) return;
 
   event.preventDefault();
@@ -392,9 +396,10 @@ function handleContentClick(event: MouseEvent) {
   const indexMatch = fileId.match(/source-file-(\d+)/);
   const sourceIndex = indexMatch ? Number.parseInt(indexMatch[1], 10) : -1;
 
-  const file = findSourceFile(sourceLink)
-    || (sourceIndex >= 0 ? sourceFiles.value[sourceIndex] || null : null)
-    || findSourceFileByText(sourceLink.textContent || '');
+  const file =
+    findSourceFile(sourceLink) ||
+    (sourceIndex >= 0 ? sourceFiles.value[sourceIndex] || null : null) ||
+    findSourceFileByText(sourceLink.textContent || '');
   if (!file) return;
 
   const contextAnchorText = extractContextAnchorText(sourceLink);
@@ -443,14 +448,13 @@ async function handleSourceFileClick(fileInfo: {
       payload: {
         ...detail,
         fileMd5: detail?.fileMd5 || extractedMd5 || undefined,
-        anchorText: detail?.anchorText || clickedAnchorText || '',
+        anchorText: detail?.anchorText || clickedAnchorText || ''
       }
     });
   } catch {
     window.$message?.error(`文件下载失败: ${fileName}`);
   }
 }
-
 </script>
 
 <template>
@@ -464,13 +468,21 @@ async function handleSourceFileClick(fileInfo: {
   >
     <header class="chat-message__header">
       <div class="chat-message__identity">
-        <NAvatar :class="isUserMessage ? 'chat-message__avatar chat-message__avatar--user' : 'chat-message__avatar chat-message__avatar--assistant'">
+        <NAvatar
+          :class="
+            isUserMessage
+              ? 'chat-message__avatar chat-message__avatar--user'
+              : 'chat-message__avatar chat-message__avatar--assistant'
+          "
+        >
           <SvgIcon v-if="isUserMessage" icon="ph:user-circle" class="text-icon-large color-white" />
           <SvgIcon v-else local-icon="logo" class="text-icon-large color-white" />
         </NAvatar>
         <div class="chat-message__meta">
           <div class="chat-message__author-row">
-            <NText class="chat-message__author">{{ isUserMessage ? (userDisplayName || authStore.userInfo.username) : (assistantDisplayName || '智枢') }}</NText>
+            <NText class="chat-message__author">
+              {{ isUserMessage ? userDisplayName || authStore.userInfo.username : assistantDisplayName || '智枢' }}
+            </NText>
             <span class="chat-message__role-tag">
               {{ isUserMessage ? '提问方' : '智能助手' }}
             </span>
@@ -488,7 +500,11 @@ async function handleSourceFileClick(fileInfo: {
     </header>
 
     <div class="chat-message__body" :class="{ 'chat-message__body--user': isUserMessage }">
-      <div class="chat-message__bubble" :class="{ 'chat-message__bubble--user': isUserMessage }" @click.stop="handleBubbleClick">
+      <div
+        class="chat-message__bubble"
+        :class="{ 'chat-message__bubble--user': isUserMessage }"
+        @click.stop="handleBubbleClick"
+      >
         <NText v-if="isPendingMessage" class="chat-message__state chat-message__state--pending">
           <icon-eos-icons:three-dots-loading class="text-8" />
           <span>{{ stateLabel }}</span>
@@ -513,7 +529,14 @@ async function handleSourceFileClick(fileInfo: {
 
     <footer v-if="showActions" class="chat-message__footer" @click.stop>
       <div class="chat-message__actions">
-        <NButton quaternary class="chat-message__action" @click.stop="handleCopy(msg.content || ''); collapseMobileActions()">
+        <NButton
+          quaternary
+          class="chat-message__action"
+          @click.stop="
+            handleCopy(msg.content || '');
+            collapseMobileActions();
+          "
+        >
           <template #icon>
             <icon-mynaui:copy />
           </template>

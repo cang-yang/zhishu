@@ -142,9 +142,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="chat-composer" :class="{ 'chat-composer--mobile': isMobileViewport }" :style="isMobileViewport ? { bottom: `${composerInsetBottom}px` } : undefined">
+  <section
+    class="chat-composer"
+    :class="{ 'chat-composer--mobile': isMobileViewport }"
+    :style="isMobileViewport ? { bottom: `${composerInsetBottom}px` } : undefined"
+  >
     <div class="chat-composer__shell">
-      <button v-if="!isMobileViewport" type="button" class="chat-composer__drag-handle" @mousedown.prevent="startResize">
+      <button
+        v-if="!isMobileViewport"
+        type="button"
+        class="chat-composer__drag-handle"
+        @mousedown.prevent="startResize"
+      >
         <span class="chat-composer__drag-bar" />
       </button>
 
@@ -163,7 +172,9 @@ onMounted(() => {
           <span v-if="isRateLimited" class="chat-composer__status-pill chat-composer__status-pill--warning">
             {{ cooldownText }}
           </span>
-          <span v-if="shortcutHintVisible" class="chat-composer__status-pill">Enter 发送 · Shift/Ctrl + Enter 换行</span>
+          <span v-if="shortcutHintVisible" class="chat-composer__status-pill">
+            Enter 发送 · Shift/Ctrl + Enter 换行
+          </span>
         </div>
 
         <div class="chat-composer__action-row">

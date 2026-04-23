@@ -33,7 +33,10 @@ provide('setActiveMobileActionMessageId', setActiveMobileActionMessageId);
 
 const messageRenderSignature = computed(() => {
   return activeMessages.value
-    .map(item => `${item.messageId}:${item.lifecycle || item.status}:${item.updatedAtClient || item.timestamp || ''}:${item.content?.length || 0}`)
+    .map(
+      item =>
+        `${item.messageId}:${item.lifecycle || item.status}:${item.updatedAtClient || item.timestamp || ''}:${item.content?.length || 0}`
+    )
     .join('|');
 });
 
@@ -54,7 +57,12 @@ watch(activeSessionId, () => {
 
 function getScrollContainer() {
   const instance = scrollbarRef.value as any;
-  return instance?.containerRef || instance?.scrollbarInstRef?.containerRef || instance?.$el?.querySelector('.n-scrollbar-container') || null;
+  return (
+    instance?.containerRef ||
+    instance?.scrollbarInstRef?.containerRef ||
+    instance?.$el?.querySelector('.n-scrollbar-container') ||
+    null
+  );
 }
 
 function handleScroll() {

@@ -275,15 +275,14 @@ onBeforeUnmount(() => {
       <template #header-extra>
         <div class="flex items-center gap-2">
           <span class="text-xs text-stone-400">保存后立即对新请求生效</span>
-          <NButton type="primary" size="small" :loading="rateLimitSaving" @click="submitRateLimits">
-            保存配置
-          </NButton>
+          <NButton type="primary" size="small" :loading="rateLimitSaving" @click="submitRateLimits">保存配置</NButton>
         </div>
       </template>
 
       <NSpin :show="rateLimitLoading">
-        <div class="mb-4 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-xs text-stone-500">
-          这里集中管理聊天消息、LLM 全网 Token 预算，以及 Embedding 上传/查询两条链路的运行时限流配置。保存后对新请求立即生效，无需改 `application.yml`。
+        <div class="mb-4 border border-stone-200 rounded-2xl bg-stone-50 px-4 py-3 text-xs text-stone-500">
+          这里集中管理聊天消息、LLM 全网 Token 预算，以及 Embedding
+          上传/查询两条链路的运行时限流配置。保存后对新请求立即生效，无需改 `application.yml`。
         </div>
 
         <div v-if="rateLimits" class="grid gap-4" :class="isMobileViewport ? 'grid-cols-1' : 'xl:grid-cols-2'">
@@ -332,7 +331,11 @@ onBeforeUnmount(() => {
               </div>
               <div>
                 <div class="limit-label">分钟窗口秒数</div>
-                <NInputNumber v-model:value="rateLimits.embeddingUploadToken.minuteWindowSeconds" :min="1" class="w-full" />
+                <NInputNumber
+                  v-model:value="rateLimits.embeddingUploadToken.minuteWindowSeconds"
+                  :min="1"
+                  class="w-full"
+                />
               </div>
               <div>
                 <div class="limit-label">日 Token 上限</div>
@@ -340,7 +343,11 @@ onBeforeUnmount(() => {
               </div>
               <div>
                 <div class="limit-label">日窗口秒数</div>
-                <NInputNumber v-model:value="rateLimits.embeddingUploadToken.dayWindowSeconds" :min="1" class="w-full" />
+                <NInputNumber
+                  v-model:value="rateLimits.embeddingUploadToken.dayWindowSeconds"
+                  :min="1"
+                  class="w-full"
+                />
               </div>
             </div>
           </div>
@@ -354,7 +361,11 @@ onBeforeUnmount(() => {
               </div>
               <div>
                 <div class="limit-label">分钟窗口秒数</div>
-                <NInputNumber v-model:value="rateLimits.embeddingQueryRequest.minuteWindowSeconds" :min="1" class="w-full" />
+                <NInputNumber
+                  v-model:value="rateLimits.embeddingQueryRequest.minuteWindowSeconds"
+                  :min="1"
+                  class="w-full"
+                />
               </div>
               <div>
                 <div class="limit-label">单用户日次数</div>
@@ -362,7 +373,11 @@ onBeforeUnmount(() => {
               </div>
               <div>
                 <div class="limit-label">日窗口秒数</div>
-                <NInputNumber v-model:value="rateLimits.embeddingQueryRequest.dayWindowSeconds" :min="1" class="w-full" />
+                <NInputNumber
+                  v-model:value="rateLimits.embeddingQueryRequest.dayWindowSeconds"
+                  :min="1"
+                  class="w-full"
+                />
               </div>
               <div>
                 <div class="limit-label">全网分钟 Token</div>
@@ -370,7 +385,11 @@ onBeforeUnmount(() => {
               </div>
               <div>
                 <div class="limit-label">查询分钟窗口秒数</div>
-                <NInputNumber v-model:value="rateLimits.embeddingQueryGlobalToken.minuteWindowSeconds" :min="1" class="w-full" />
+                <NInputNumber
+                  v-model:value="rateLimits.embeddingQueryGlobalToken.minuteWindowSeconds"
+                  :min="1"
+                  class="w-full"
+                />
               </div>
               <div>
                 <div class="limit-label">全网日 Token</div>
@@ -378,7 +397,11 @@ onBeforeUnmount(() => {
               </div>
               <div>
                 <div class="limit-label">查询日窗口秒数</div>
-                <NInputNumber v-model:value="rateLimits.embeddingQueryGlobalToken.dayWindowSeconds" :min="1" class="w-full" />
+                <NInputNumber
+                  v-model:value="rateLimits.embeddingQueryGlobalToken.dayWindowSeconds"
+                  :min="1"
+                  class="w-full"
+                />
               </div>
             </div>
           </div>
@@ -397,8 +420,26 @@ onBeforeUnmount(() => {
       </template>
       <template #header-extra>
         <div class="flex items-center gap-2">
-          <NButton size="small" :type="trendWindow === 7 ? 'primary' : 'default'" @click="trendWindow = 7; getOverview()">近7天</NButton>
-          <NButton size="small" :type="trendWindow === 30 ? 'primary' : 'default'" @click="trendWindow = 30; getOverview()">近30天</NButton>
+          <NButton
+            size="small"
+            :type="trendWindow === 7 ? 'primary' : 'default'"
+            @click="
+              trendWindow = 7;
+              getOverview();
+            "
+          >
+            近7天
+          </NButton>
+          <NButton
+            size="small"
+            :type="trendWindow === 30 ? 'primary' : 'default'"
+            @click="
+              trendWindow = 30;
+              getOverview();
+            "
+          >
+            近30天
+          </NButton>
         </div>
       </template>
 
@@ -432,7 +473,10 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="grid gap-4" :class="isMobileViewport ? 'grid-cols-1' : 'xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]'">
+          <div
+            class="grid gap-4"
+            :class="isMobileViewport ? 'grid-cols-1' : 'xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]'"
+          >
             <NCard size="small" embedded class="overview-section">
               <template #header>调用趋势</template>
               <div ref="trendChartRef" class="h-360px w-full" />
@@ -449,13 +493,14 @@ onBeforeUnmount(() => {
                   >
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2">
-                        <span class="font-medium text-stone-700">{{ alert.username }}</span>
+                        <span class="text-stone-700 font-medium">{{ alert.username }}</span>
                         <NTag size="small" :type="alertType(alert.level)">{{ scopeLabel(alert.scope) }}</NTag>
                       </div>
                       <NTag size="small" :type="alertType(alert.level)">{{ alert.message }}</NTag>
                     </div>
                     <div class="text-xs text-stone-500">
-                      {{ formatNumber(alert.usedTokens) }} / {{ formatNumber(alert.limitTokens) }}，剩余 {{ formatNumber(alert.remainingTokens) }}，{{ alert.requestCount }} 次
+                      {{ formatNumber(alert.usedTokens) }} / {{ formatNumber(alert.limitTokens) }}，剩余
+                      {{ formatNumber(alert.remainingTokens) }}，{{ alert.requestCount }} 次
                     </div>
                   </div>
                 </div>
@@ -466,7 +511,7 @@ onBeforeUnmount(() => {
                 <template #header>今日用量排行</template>
                 <div class="flex flex-col gap-4">
                   <div>
-                    <div class="mb-2 text-xs font-semibold uppercase tracking-0.12em text-stone-400">LLM</div>
+                    <div class="mb-2 text-xs text-stone-400 font-semibold tracking-0.12em uppercase">LLM</div>
                     <div v-if="overview?.llmRankings?.length" class="flex flex-col gap-2">
                       <div
                         v-for="(item, index) in overview.llmRankings"
@@ -475,9 +520,10 @@ onBeforeUnmount(() => {
                       >
                         <span class="ranking-index">{{ index + 1 }}</span>
                         <div class="flex-1">
-                          <div class="font-medium text-stone-700">{{ item.username }}</div>
+                          <div class="text-stone-700 font-medium">{{ item.username }}</div>
                           <div class="text-xs text-stone-500">
-                            {{ formatNumber(item.usedTokens) }} / {{ formatNumber(item.limitTokens) }} · {{ item.requestCount }} 次
+                            {{ formatNumber(item.usedTokens) }} / {{ formatNumber(item.limitTokens) }} ·
+                            {{ item.requestCount }} 次
                           </div>
                         </div>
                       </div>
@@ -486,7 +532,7 @@ onBeforeUnmount(() => {
                   </div>
 
                   <div>
-                    <div class="mb-2 text-xs font-semibold uppercase tracking-0.12em text-stone-400">Embedding</div>
+                    <div class="mb-2 text-xs text-stone-400 font-semibold tracking-0.12em uppercase">Embedding</div>
                     <div v-if="overview?.embeddingRankings?.length" class="flex flex-col gap-2">
                       <div
                         v-for="(item, index) in overview.embeddingRankings"
@@ -495,9 +541,10 @@ onBeforeUnmount(() => {
                       >
                         <span class="ranking-index">{{ index + 1 }}</span>
                         <div class="flex-1">
-                          <div class="font-medium text-stone-700">{{ item.username }}</div>
+                          <div class="text-stone-700 font-medium">{{ item.username }}</div>
                           <div class="text-xs text-stone-500">
-                            {{ formatNumber(item.usedTokens) }} / {{ formatNumber(item.limitTokens) }} · {{ item.requestCount }} 次
+                            {{ formatNumber(item.usedTokens) }} / {{ formatNumber(item.limitTokens) }} ·
+                            {{ item.requestCount }} 次
                           </div>
                         </div>
                       </div>

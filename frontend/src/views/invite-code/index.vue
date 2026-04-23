@@ -1,10 +1,8 @@
 <script setup lang="tsx">
 import type { DataTableColumns, DataTableRowKey, FormRules, PaginationProps, SelectOption } from 'naive-ui';
-import dayjs from 'dayjs';
 import { NButton, NInput, NInputNumber, NPopconfirm, NTag } from 'naive-ui';
+import dayjs from 'dayjs';
 import { buildInviteCodeShareMessage } from '@/constants/invite-channel';
-import { useFormRules, useNaiveForm } from '@/hooks/common/form';
-import { useAppStore } from '@/store/modules/app';
 import {
   fetchCreateInviteCode,
   fetchDeleteInviteCode,
@@ -12,6 +10,8 @@ import {
   fetchGetInviteCodeList,
   fetchUpdateInviteCode
 } from '@/service/api';
+import { useAppStore } from '@/store/modules/app';
+import { useFormRules, useNaiveForm } from '@/hooks/common/form';
 
 const appStore = useAppStore();
 const isMobileViewport = ref(false);
@@ -442,8 +442,13 @@ onBeforeUnmount(() => {
             <div class="invite-code-page__card-header">
               <strong>#{{ row.id }}</strong>
               <div class="invite-code-page__status-row">
-                <NTag :type="row.enabled ? 'success' : 'default'" size="small">{{ row.enabled ? '已启用' : '已禁用' }}</NTag>
-                <NTag :type="!row.enabled ? 'default' : row.usedCount >= row.maxUses ? 'error' : 'success'" size="small">
+                <NTag :type="row.enabled ? 'success' : 'default'" size="small">
+                  {{ row.enabled ? '已启用' : '已禁用' }}
+                </NTag>
+                <NTag
+                  :type="!row.enabled ? 'default' : row.usedCount >= row.maxUses ? 'error' : 'success'"
+                  size="small"
+                >
                   {{ !row.enabled ? '不可用' : row.usedCount >= row.maxUses ? '已耗尽' : '可使用' }}
                 </NTag>
               </div>
@@ -452,9 +457,36 @@ onBeforeUnmount(() => {
             <div class="invite-code-page__code">邀请码：{{ row.code }}</div>
 
             <div class="invite-code-page__quick-actions">
-              <NButton size="tiny" quaternary @click="navigator.clipboard.writeText(row.code); window.$message?.success('邀请码已复制')">复制</NButton>
-              <NButton size="tiny" quaternary @click="navigator.clipboard.writeText(createInviteShareLink(row.code)); window.$message?.success('注册链接已复制')">复制链接</NButton>
-              <NButton size="tiny" quaternary @click="navigator.clipboard.writeText(buildInviteCodeShareMessage(createInviteShareLink(row.code), row.code)); window.$message?.success('邀请话术已复制')">复制话术</NButton>
+              <NButton
+                size="tiny"
+                quaternary
+                @click="
+                  navigator.clipboard.writeText(row.code);
+                  window.$message?.success('邀请码已复制');
+                "
+              >
+                复制
+              </NButton>
+              <NButton
+                size="tiny"
+                quaternary
+                @click="
+                  navigator.clipboard.writeText(createInviteShareLink(row.code));
+                  window.$message?.success('注册链接已复制');
+                "
+              >
+                复制链接
+              </NButton>
+              <NButton
+                size="tiny"
+                quaternary
+                @click="
+                  navigator.clipboard.writeText(buildInviteCodeShareMessage(createInviteShareLink(row.code), row.code));
+                  window.$message?.success('邀请话术已复制');
+                "
+              >
+                复制话术
+              </NButton>
             </div>
 
             <div class="invite-code-page__meta">
@@ -465,7 +497,9 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="invite-code-page__quick-actions">
-              <NButton v-if="row.usedCount === 0" type="primary" ghost size="small" @click="openEditDialog(row)">编辑</NButton>
+              <NButton v-if="row.usedCount === 0" type="primary" ghost size="small" @click="openEditDialog(row)">
+                编辑
+              </NButton>
               <NPopconfirm v-if="row.enabled" @positive-click="handleDisable(row.id)">
                 <template #trigger>
                   <NButton type="warning" ghost size="small">禁用</NButton>

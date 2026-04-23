@@ -15,14 +15,7 @@
   "bugs": {
     "url": "https://github.com/cang-yang/zhishu/issues"
   },
-  "keywords": [
-    "ai",
-    "rag",
-    "llm",
-    "chat",
-    "cang-yang",
-    "zhishu"
-  ],
+  "keywords": ["ai", "rag", "llm", "chat", "cang-yang", "zhishu"],
   "engines": {
     "node": ">=18.20.0",
     "pnpm": ">=8.7.0"
