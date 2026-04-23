@@ -132,13 +132,13 @@ onBeforeUnmount(() => {
       <template #header>模型 Provider 配置</template>
       <template #header-extra>
         <div class="flex items-center gap-2">
-          <span class="text-xs text-stone-400">LLM 保存后新请求立即生效，Embedding 暂不允许危险直切</span>
+          <span class="text-xs text-stone-400">切换模型后保存即时生效，Embedding 暂不允许危险直切</span>
         </div>
       </template>
 
       <NSpin :show="modelProvidersLoading">
         <div class="mb-4 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-xs text-stone-500">
-          这里管理平台代付的模型接入配置。API Key 输入为空时保留现有密钥，不会回显明文。Embedding 如果切换 active provider，后端会拦截需要重嵌入的危险变更。
+          这里集中管理平台的多模型接入配置，AI 支持自由切换任意已配置的模型服务商（如 DeepSeek、Qwen、智谱 等）。API Key 输入为空时保留现有密钥，不会回显明文。Embedding 如果切换 active provider，后端会拦截需要重嵌入的危险变更。
         </div>
 
         <div v-if="modelProviders" class="grid gap-4">
@@ -146,7 +146,7 @@ onBeforeUnmount(() => {
             <div class="provider-scope-header">
               <div>
                 <div class="provider-scope-title">LLM Provider</div>
-                <div class="provider-scope-sub">聊天请求会按当前 active provider 路由</div>
+                <div class="provider-scope-sub">可自由切换，聊天将通过选中的 Provider 路由至对应模型</div>
               </div>
               <div class="flex items-center gap-3">
                 <NSelect

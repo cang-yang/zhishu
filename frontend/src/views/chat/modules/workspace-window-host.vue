@@ -178,7 +178,17 @@ function renderQuotaSummary(quota: Api.User.UsageQuota) {
     return '当前未启用';
   }
 
-  return `${Number(quota.usedTokens || 0).toLocaleString()} / ${Number(quota.limitTokens || 0).toLocaleString()}`;
+  const limit = Number(quota.limitTokens || 0);
+  const remaining = Number(quota.remainingTokens || 0);
+
+  if (limit <= 0 && remaining > 0) {
+    return `余额 ${remaining.toLocaleString()}`;
+  }
+  if (limit <= 0 && remaining <= 0) {
+    return '未配置额度';
+  }
+  const used = Number(quota.usedTokens || 0);
+  return `${Math.max(0, used).toLocaleString()} / ${limit.toLocaleString()}`;
 }
 
 function renderQuotaMeta(quota: Api.User.UsageQuota) {
@@ -186,7 +196,17 @@ function renderQuotaMeta(quota: Api.User.UsageQuota) {
     return '可在后续套餐模块中扩展';
   }
 
-  return `剩余 ${Number(quota.remainingTokens || 0).toLocaleString()} · ${Number(quota.requestCount || 0).toLocaleString()} 次请求`;
+  const remaining = Number(quota.remainingTokens || 0);
+  const limit = Number(quota.limitTokens || 0);
+  const requests = Number(quota.requestCount || 0).toLocaleString();
+
+  if (limit <= 0 && remaining > 0) {
+    return `无上限 · 按余额消耗 · ${requests} 次请求`;
+  }
+  if (limit <= 0) {
+    return '';
+  }
+  return `剩余 ${Math.max(0, remaining).toLocaleString()} · ${requests} 次请求`;
 }
 
 function handleClose() {

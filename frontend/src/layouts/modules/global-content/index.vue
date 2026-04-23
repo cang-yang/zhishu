@@ -69,8 +69,28 @@ function resetScroll() {
   height: 100%;
   min-height: 100%;
   width: 100%;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   border-radius: 24px 24px 0 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 128, 128, 0.25) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(128, 128, 128, 0.25);
+    border-radius: 6px;
+
+    &:hover {
+      background-color: rgba(128, 128, 128, 0.4);
+    }
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
   &--workbench {
     height: 100%;

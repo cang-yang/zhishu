@@ -179,7 +179,9 @@ public class UsageBalanceQuotaService extends UsageQuotaService {
             balance = userTokenService.getEmbeddingTokenBalance(userId);
             limit = userTokenService.getUserEmbeddingTotalIncreaseTokens(userId);
         }
-        long usedTokens = limit - balance;
+        // [Fix] 余额模式下 limit(INCREASE 总和)可能为 0（admin Bootstrap / 直接 Redis 设值），
+        // 此时 limit - balance 产生负数。兜底为 0，前端根据 limit=0 判断为「余额模式」
+        long usedTokens = Math.max(0, limit - balance);
         // 请求次数
         long requestCount = userTokenService.getUserTotalRequestCount(scope, userId);
         return new QuotaView(true, usedTokens, limit, balance, requestCount);

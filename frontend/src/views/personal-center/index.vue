@@ -273,6 +273,34 @@ const tokenRecordColumns = computed(() => [
     render: (row: Api.User.TokenRecord) => new Date(row.createdAt).toLocaleString('zh-CN')
   }
 ]);
+
+// ─── 配额显示辅助（修复 limitTokens=0 时的余额模式） ───
+function formatQuotaDisplay(quota: any): string {
+  if (!quota || !quota.enabled) return '未启用';
+  const used = Number(quota.usedTokens || 0);
+  const limit = Number(quota.limitTokens || 0);
+  const remaining = Number(quota.remainingTokens || 0);
+  if (limit <= 0 && remaining > 0) return `余额 ${remaining.toLocaleString()}`;
+  if (limit <= 0 && remaining <= 0) return '未配置额度';
+  return `${Math.max(0, used).toLocaleString()} / ${limit.toLocaleString()}`;
+}
+
+function calcQuotaPercent(quota: any): number {
+  if (!quota) return 0;
+  const limit = Number(quota.limitTokens || 0);
+  const used = Number(quota.usedTokens || 0);
+  if (limit <= 0) return 0;
+  return Math.min(100, Math.max(0, Math.round((Math.max(0, used) / limit) * 100)));
+}
+
+function formatQuotaFooter(quota: any): string {
+  if (!quota || !quota.enabled) return '';
+  const remaining = Number(quota.remainingTokens || 0);
+  const limit = Number(quota.limitTokens || 0);
+  if (limit <= 0 && remaining > 0) return '无上限 · 按余额消耗';
+  if (limit <= 0) return '';
+  return `剩余 ${Math.max(0, remaining).toLocaleString()}`;
+}
 </script>
 
 <template>
@@ -357,15 +385,15 @@ const tokenRecordColumns = computed(() => [
           <div class="settings-page__quota-grid">
             <div class="settings-page__quota-card">
               <div class="settings-page__quota-title">LLM Token</div>
-              <div class="settings-page__quota-value">{{ usage.llm.usedTokens.toLocaleString() }} / {{ usage.llm.limitTokens.toLocaleString() }}</div>
-              <NProgress type="line" :percentage="usage.llm.limitTokens ? Math.min(100, Math.round((usage.llm.usedTokens / usage.llm.limitTokens) * 100)) : 0" :show-indicator="false" />
-              <div class="settings-page__quota-meta">剩余 {{ usage.llm.remainingTokens.toLocaleString() }}</div>
+              <div class="settings-page__quota-value">{{ formatQuotaDisplay(usage.llm) }}</div>
+              <NProgress type="line" :percentage="calcQuotaPercent(usage.llm)" :show-indicator="false" />
+              <div class="settings-page__quota-meta">{{ formatQuotaFooter(usage.llm) }}</div>
             </div>
             <div class="settings-page__quota-card">
               <div class="settings-page__quota-title">Embedding Token</div>
-              <div class="settings-page__quota-value">{{ usage.embedding.usedTokens.toLocaleString() }} / {{ usage.embedding.limitTokens.toLocaleString() }}</div>
-              <NProgress type="line" :percentage="usage.embedding.limitTokens ? Math.min(100, Math.round((usage.embedding.usedTokens / usage.embedding.limitTokens) * 100)) : 0" :show-indicator="false" />
-              <div class="settings-page__quota-meta">剩余 {{ usage.embedding.remainingTokens.toLocaleString() }}</div>
+              <div class="settings-page__quota-value">{{ formatQuotaDisplay(usage.embedding) }}</div>
+              <NProgress type="line" :percentage="calcQuotaPercent(usage.embedding)" :show-indicator="false" />
+              <div class="settings-page__quota-meta">{{ formatQuotaFooter(usage.embedding) }}</div>
             </div>
           </div>
         </div>
