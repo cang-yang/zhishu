@@ -1,0 +1,16 @@
+# ============================================================
+# Dev Profile — 本地源码启动
+# 所有连接参数继承 application.yml，由 .env 注入
+# 这里只覆盖：日志级别、JPA show-sql
+# ============================================================
+spring:
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springframework.boot.autoconfigure.web.servlet: DEBUG
+    org.springframework.security: DEBUG
+    com.canggo.zhishu: DEBUG
+    io.minio: DEBUG

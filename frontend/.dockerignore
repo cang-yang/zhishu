@@ -1,0 +1,9 @@
+node_modules
+dist
+.turbo
+test-results
+*.log
+.git
+.idea
+.vscode
+coverage

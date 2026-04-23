@@ -1,0 +1,193 @@
+@import './reset.css';
+@import './nprogress.css';
+@import './transition.css';
+
+html,
+body,
+#app {
+  height: 100%;
+  overflow: hidden;
+}
+
+:root,
+html.light {
+  --mobile-top-bar-height: 56px;
+  --mobile-tab-bar-height: 60px;
+  --mobile-content-padding: 16px;
+  --mobile-card-radius: 12px;
+  --mobile-card-gap: 12px;
+  --color-bg-layout: #f3f6fb;
+  --color-bg-container: rgba(255, 255, 255, 0.96);
+  --color-bg-elevated: rgba(255, 255, 255, 0.98);
+  --color-bg-card: rgba(248, 250, 252, 0.96);
+  --color-border: rgba(148, 163, 184, 0.18);
+  --color-text-primary: #102033;
+  --color-text-secondary: rgba(51, 65, 85, 0.76);
+  --color-text-tertiary: rgba(100, 116, 139, 0.84);
+  --color-fill-hover: rgba(15, 23, 42, 0.04);
+  --color-fill-active: rgba(15, 23, 42, 0.08);
+  --app-layout-bg:
+    radial-gradient(circle at top left, rgba(77, 109, 255, 0.1), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.08), transparent 20%),
+    #f3f6fb;
+  --app-elevated-bg: rgba(255, 255, 255, 0.96);
+  --app-surface-bg: rgba(255, 255, 255, 0.86);
+  --app-sidebar-bg: rgba(255, 255, 255, 0.82);
+  --app-control-bg: rgba(255, 255, 255, 0.92);
+  --app-control-bg-hover: rgba(239, 246, 255, 0.96);
+  --app-hover-bg: rgba(239, 246, 255, 0.9);
+  --app-soft-bg: rgba(248, 250, 252, 0.96);
+  --app-fill-soft: rgba(15, 23, 42, 0.04);
+  --app-accent-soft: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(14, 165, 233, 0.08));
+  --app-border: rgba(148, 163, 184, 0.18);
+  --app-text-primary: #102033;
+  --app-text-secondary: rgba(51, 65, 85, 0.76);
+  --app-text-tertiary: rgba(100, 116, 139, 0.84);
+  --app-surface-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+}
+
+html.dark {
+  --color-bg-layout: #070a10;
+  --color-bg-container: rgba(9, 12, 18, 0.96);
+  --color-bg-elevated: rgba(15, 23, 42, 0.92);
+  --color-bg-card: rgba(15, 23, 42, 0.72);
+  --color-border: rgba(148, 163, 184, 0.14);
+  --color-text-primary: #e5edf7;
+  --color-text-secondary: rgba(203, 213, 225, 0.72);
+  --color-text-tertiary: rgba(148, 163, 184, 0.84);
+  --color-fill-hover: rgba(255, 255, 255, 0.04);
+  --color-fill-active: rgba(255, 255, 255, 0.08);
+  --app-layout-bg:
+    radial-gradient(circle at top left, rgba(77, 109, 255, 0.06), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.05), transparent 20%),
+    #070a10;
+  --app-elevated-bg: rgba(9, 12, 18, 0.96);
+  --app-surface-bg: rgba(8, 12, 18, 0.78);
+  --app-sidebar-bg: rgba(8, 11, 18, 0.92);
+  --app-control-bg: rgba(15, 23, 42, 0.74);
+  --app-control-bg-hover: rgba(30, 41, 59, 0.86);
+  --app-hover-bg: rgba(30, 41, 59, 0.84);
+  --app-soft-bg: rgba(15, 23, 42, 0.68);
+  --app-fill-soft: rgba(255, 255, 255, 0.04);
+  --app-accent-soft: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(14, 165, 233, 0.12));
+  --app-border: rgba(148, 163, 184, 0.14);
+  --app-text-primary: #e5edf7;
+  --app-text-secondary: rgba(203, 213, 225, 0.72);
+  --app-text-tertiary: rgba(148, 163, 184, 0.84);
+  --app-surface-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+}
+
+html {
+  overflow: hidden;
+  background: var(--app-layout-bg);
+  color: var(--app-text-primary);
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--app-layout-bg);
+  color: var(--app-text-primary);
+}
+
+body,
+button,
+input,
+textarea,
+select {
+  font-family:
+    Inter,
+    'PingFang SC',
+    'Microsoft YaHei',
+    system-ui,
+    sans-serif;
+}
+
+#app {
+  background: var(--app-layout-bg);
+}
+
+.card-wrapper,
+.app-surface-card,
+.app-surface-card--soft {
+  border: 1px solid var(--app-border) !important;
+  border-radius: 26px !important;
+  background: var(--app-surface-bg) !important;
+  box-shadow: var(--app-surface-shadow) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.card-wrapper :where(.n-card-header__main, .n-card-header__extra),
+.card-wrapper :where(.n-card__content, .n-card__footer),
+.app-surface-card,
+.app-surface-card--soft {
+  color: var(--app-text-primary);
+}
+
+.card-wrapper :where(.n-data-table),
+.card-wrapper :where(.n-input, .n-input-number, .n-base-selection),
+.card-wrapper :where(.n-select),
+.card-wrapper :where(.n-button:not(.n-button--primary-type)) {
+  --n-color: var(--app-control-bg) !important;
+  --n-color-hover: var(--app-control-bg-hover) !important;
+  --n-color-pressed: var(--app-control-bg-hover) !important;
+  --n-border: 1px solid var(--app-border) !important;
+  --n-border-hover: 1px solid rgba(96, 165, 250, 0.24) !important;
+  --n-border-focus: 1px solid rgba(96, 165, 250, 0.34) !important;
+  --n-text-color: var(--app-text-primary) !important;
+  --n-placeholder-color: var(--app-text-secondary) !important;
+}
+
+.card-wrapper :where(.n-data-table-th, .n-data-table-td) {
+  background: transparent !important;
+}
+
+.card-wrapper :where(.n-data-table-tr:hover .n-data-table-td) {
+  background: var(--app-hover-bg) !important;
+}
+
+@media (hover: none) {
+  .card-wrapper :where(.n-data-table-tr:hover .n-data-table-td) {
+    background: transparent !important;
+  }
+}
+
+.card-wrapper :where(.n-tag) {
+  --n-border-radius: 999px !important;
+}
+
+.n-modal .n-card,
+.n-dialog {
+  background: var(--app-elevated-bg) !important;
+  color: var(--app-text-primary) !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: 24px !important;
+}
+
+.admin-page-shell {
+  min-height: 100%;
+  height: auto;
+  overflow: visible;
+  color: var(--app-text-primary);
+}
+
+.admin-page-shell--fixed {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  html,
+  body,
+  #app {
+    overflow: hidden;
+  }
+
+  .admin-page-shell:not(.admin-page-shell--fixed) {
+    min-height: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+}

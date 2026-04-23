@@ -1,0 +1,8 @@
+# ============================================================
+# Docker Profile — 已合并到 application.yml (base) + prod
+# ============================================================
+# 此文件仅保留用于向后兼容。
+# 建议在 docker-compose.yaml 中设置 SPRING_PROFILES_ACTIVE=prod
+#
+# 所有连接参数（MySQL、Redis、Kafka、ES、MinIO 等）均通过环境变量注入，
+# base application.yml 已包含完整的 ${ENV_VAR:default} 定义。

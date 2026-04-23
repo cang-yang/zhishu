@@ -1,0 +1,12 @@
+.git
+.idea
+.qoder
+target
+frontend/dist
+frontend/node_modules
+frontend/.turbo
+frontend/test-results
+logs
+.runtime
+hs_err_pid*.log
+*.iml

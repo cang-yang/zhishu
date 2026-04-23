@@ -1,0 +1,25 @@
+# ============================================================
+# Prod Profile — VPS Docker 部署
+# 所有连接参数继承 application.yml，由 .env (env_file) 注入
+# 这里只覆盖：日志级别、ES 安全设置
+# ============================================================
+#
+# 🔑 关键改动（相比旧版）：
+#   - 移除了 DB_HOST/DB_USER/DB_PASSWORD 等非标准变量
+#   - 统一使用 SPRING_DATASOURCE_URL / SPRING_DATASOURCE_USERNAME / ...
+#   - 与 .env.example 变量名完全一致，不再有命名歧义
+
+spring:
+  jpa:
+    show-sql: false
+
+elasticsearch:
+  insecure-trust-all-certificates: ${ELASTICSEARCH_INSECURE_TRUST_ALL_CERTIFICATES:false}
+
+logging:
+  level:
+    org.springframework.web: INFO
+    org.springframework.boot.autoconfigure.web.servlet: INFO
+    org.springframework.security: INFO
+    com.canggo.zhishu: INFO
+    io.minio: WARN
