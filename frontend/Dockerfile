@@ -11,7 +11,7 @@ COPY .env.test ./.env.test
 COPY build ./build
 COPY public ./public
 COPY src ./src
-COPY index.html tsconfig.json uno.config.ts vite.config.ts eslint.config.js tree.py ./
+COPY index.html tsconfig.json uno.config.ts vite.config.ts eslint.config.js ./
 COPY packages ./packages
 
 RUN pnpm install --frozen-lockfile

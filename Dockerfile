@@ -2,11 +2,14 @@ FROM maven:3.9.9-eclipse-temurin-17 AS builder
 
 WORKDIR /workspace
 
-# ① 先缓存 Maven 依赖（pom.xml 不变时跳过下载，大幅加速二次构建）
+# 配置国内 Maven 镜像（解决容器内下载超时）
+COPY settings.xml /root/.m2/settings.xml
+
+# 先缓存依赖
 COPY pom.xml ./
 RUN mvn dependency:go-offline -B
 
-# ② 复制源码并编译
+# 复制源码并编译
 COPY docs ./docs
 COPY src ./src
 RUN mvn clean package -DskipTests
