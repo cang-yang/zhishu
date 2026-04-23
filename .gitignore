@@ -27,6 +27,8 @@ replay_pid*
 .vite-ssg-dist
 .vite-ssg-temp
 .env
+!frontend/.env
+!frontend/.env.*
 *.local
 dist
 dist-ssr
