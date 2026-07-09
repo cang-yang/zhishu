@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="34.0" y="44.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#1f2937">ZH-F02 bounded-concurrency chunk upload</text>
+<text x="34.0" y="76.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#64748b">M scale 64MiB/13 chunks, REAL backend HTTP</text>
+<rect x="34" y="92" width="14" height="14" rx="3" fill="#94a3b8"/>
+<text x="56.0" y="104.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">baseline</text>
+<rect x="136" y="92" width="14" height="14" rx="3" fill="#2563eb"/>
+<text x="158.0" y="104.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">after</text>
+<text x="34.0" y="149.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start" fill="#1f2937">median end-to-end (ms)</text>
+<text x="34.0" y="171.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">54.81% lower</text>
+<rect x="210" y="118" width="620" height="24" rx="5" fill="#f1f5f9"/>
+<rect x="210" y="118" width="620.0" height="24" rx="5" fill="#94a3b8"/>
+<text x="840.0" y="136.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">1855.1</text>
+<rect x="210" y="150" width="620" height="24" rx="5" fill="#f1f5f9"/>
+<rect x="210" y="150" width="280.2" height="24" rx="5" fill="#2563eb"/>
+<text x="500.2" y="168.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start" fill="#2563eb">838.3</text>
+<text x="34.0" y="241.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start" fill="#1f2937">P90 ratio marker</text>
+<text x="34.0" y="263.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">after/baseline=0.5276</text>
+<rect x="210" y="210" width="620" height="24" rx="5" fill="#f1f5f9"/>
+<rect x="210" y="210" width="33.4" height="24" rx="5" fill="#94a3b8"/>
+<text x="253.4" y="228.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">100</text>
+<rect x="210" y="242" width="620" height="24" rx="5" fill="#f1f5f9"/>
+<rect x="210" y="242" width="17.6" height="24" rx="5" fill="#2563eb"/>
+<text x="237.6" y="260.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start" fill="#2563eb">52.76</text>
+<text x="34.0" y="333.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start" fill="#1f2937">throughput marker</text>
+<text x="34.0" y="355.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">121.08% higher</text>
+<rect x="210" y="302" width="620" height="24" rx="5" fill="#f1f5f9"/>
+<rect x="210" y="302" width="11.5" height="24" rx="5" fill="#94a3b8"/>
+<text x="231.5" y="320.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">34.54</text>
+<rect x="210" y="334" width="620" height="24" rx="5" fill="#f1f5f9"/>
+<rect x="210" y="334" width="25.5" height="24" rx="5" fill="#2563eb"/>
+<text x="245.5" y="352.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start" fill="#2563eb">76.36</text>
+<text x="830.0" y="532.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#94a3b8">Lower is better unless noted in label</text>
+</svg>

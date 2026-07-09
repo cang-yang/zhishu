@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -68,8 +69,42 @@ public class UserService {
     @Autowired
     private UsageQuotaService usageQuotaService;
 
+    /**
+     * ZH-F07 实验 arm profile 门控：仅当激活 profile 含 "experiment" 时才 honor arm 参数切到 baseline 路径。
+     * 生产 profile 下无视 ?arm=baseline，始终走 after 生产下推路径（护栏：arm 是实验采集专用扩展，不进生产路径）。
+     */
+    @Autowired
+    private Environment environment;
+
     @Value("${spring.servlet.multipart.max-file-size:50MB}")
     private String globalUploadMaxFileSize;
+
+    /**
+     * ZH-F07 实验 arm 开关：baseline=改造前 findAll 内存路径，after=生产下推路径（默认）。
+     * 仅在实验 profile 下由实验脚本设置；生产留空走 after。
+     */
+    @Value("${zhishu.experiment.user-list-arm:}")
+    private String userListExperimentArm;
+
+    /**
+     * ZH-F07 实验分派入口：按请求级 arm 参数切换 baseline / after，支持同进程交替跑。
+     * arm=baseline → 改造前 findAll 内存路径；arm=after 或空 → 生产下推路径。
+     * 默认 arm 取自配置 zhishu.experiment.user-list-arm（实验脚本可设默认 arm）；
+     * 请求 ?arm=xxx 覆盖配置，便于同进程交替采集。
+     *
+     * <p>Profile 门控（02 §5.5 arm 边界授权）：仅当激活 profile 含 "experiment" 时才 honor arm 切到 baseline。
+     * 生产 profile（dev/prod/test 等）下无视 ?arm=baseline，始终走 after 生产下推路径，
+     * 杜绝生产环境被 ?arm=baseline 绕过 ZH-F07 下推优化的越权路径。
+     */
+    public Map<String, Object> getUserListForExperiment(String keyword, String orgTag, Integer status, int page, int size, String requestArm) {
+        String arm = (requestArm != null && !requestArm.isBlank()) ? requestArm.trim() : userListExperimentArm;
+        // profile 门控：非 experiment profile 下 arm 一律视为 after，绝不下沉到 baseline 全表内存路径
+        boolean experimentProfile = Arrays.asList(environment.getActiveProfiles()).contains("experiment");
+        if (experimentProfile && "baseline".equalsIgnoreCase(arm)) {
+            return getUserListBaseline(keyword, orgTag, status, page, size);
+        }
+        return getUserList(keyword, orgTag, status, page, size);
+    }
 
     /**
      * 注册新用户。
@@ -750,6 +785,103 @@ public class UserService {
         int safePage = Math.max(page, 1);
         int safeSize = size > 0 ? size : 10;
         int pageIndex = safePage - 1;
+
+        // 1. 过滤参数归一化：keyword 做 LIKE 通配符转义后包 %...%，与 baseline Java String.contains 字面匹配等价
+        String keywordPattern = (keyword == null || keyword.isBlank())
+                ? null
+                : "%" + com.canggo.zhishu.repository.spec.UserListSpecs.escapeLike(keyword) + "%";
+        String orgTagParam = (orgTag == null || orgTag.isBlank()) ? null : orgTag;
+        User.Role roleParam = (status == null) ? null : (status == 1 ? User.Role.USER : User.Role.ADMIN);
+
+        // 2. 排序下推：createdAt DESC, id ASC（实验卡合同；dataset createdAt 唯一，id ASC 为防御性并列规则）
+        Pageable pageable = PageRequest.of(pageIndex, safeSize,
+                Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("id")));
+
+        // 3. 投影查询 + 过滤 + 分页下推到 MySQL（DB LIMIT/OFFSET，不加载全表）
+        Page<com.canggo.zhishu.service.dto.UserListRow> rowPage =
+                userRepository.findUserListRows(keywordPattern, orgTagParam, roleParam, pageable);
+
+        // 4. orgTags 明细：一次 findByTagIdIn 批量查（消除 baseline 的 N+1 逐个 findByTagId）
+        List<String> pageTagIds = rowPage.getContent().stream()
+                .filter(r -> r.orgTags() != null && !r.orgTags().isBlank())
+                .flatMap(r -> Arrays.stream(r.orgTags().split(",")))
+                .distinct()
+                .toList();
+        Map<String, OrganizationTag> tagMap = pageTagIds.isEmpty()
+                ? Map.of()
+                : organizationTagRepository.findByTagIdIn(pageTagIds).stream()
+                        .collect(Collectors.toMap(OrganizationTag::getTagId, t -> t, (a, b) -> a));
+
+        // 5. usage 批量快照（仅当前页 userIds，与 baseline 一致）
+        Map<String, UsageQuotaService.UserUsageSnapshot> usageSnapshots = usageQuotaService.getSnapshots(
+                rowPage.getContent().stream()
+                        .map(r -> String.valueOf(r.id()))
+                        .toList());
+
+        // 6. 组装响应（字段白名单逐字段与 baseline 一致；缺失 tagId 跳过，与 baseline if(tag!=null) 才 add 一致）
+        List<Map<String, Object>> userList = rowPage.getContent().stream()
+                .map(r -> buildUserListRowMap(r, tagMap, usageSnapshots))
+                .collect(Collectors.toList());
+
+        // 7. 构建返回结果（number 对外 1-based，与 baseline 一致）
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", userList);
+        result.put("totalElements", rowPage.getTotalElements());
+        result.put("totalPages", rowPage.getTotalPages());
+        result.put("size", rowPage.getSize());
+        result.put("number", rowPage.getNumber() + 1);
+
+        return result;
+    }
+
+    /**
+     * 组装单行响应。字段命名与 baseline 逐字一致：
+     * userId/username/orgTags[{tagId,name}]/primaryOrg/status/createdAt/usage。
+     * status=1 if role==USER else 0。缺失 tagId（tagMap 未命中）跳过，不输出 {tagId,null}，
+     * 与 baseline 逐个 findByTagId.orElse(null) 后 if(tag!=null) 才 add 的行为一致（护栏 ZH-M-F07-04）。
+     */
+    private Map<String, Object> buildUserListRowMap(
+            com.canggo.zhishu.service.dto.UserListRow r,
+            Map<String, OrganizationTag> tagMap,
+            Map<String, UsageQuotaService.UserUsageSnapshot> usageSnapshots) {
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("userId", r.id());
+        userMap.put("username", r.username());
+
+        List<Map<String, String>> orgTagDetails = new ArrayList<>();
+        if (r.orgTags() != null && !r.orgTags().isEmpty()) {
+            Arrays.stream(r.orgTags().split(","))
+                    .forEach(tagId -> {
+                        OrganizationTag tag = tagMap.get(tagId);
+                        if (tag != null) {
+                            Map<String, String> tagInfo = new HashMap<>();
+                            tagInfo.put("tagId", tag.getTagId());
+                            tagInfo.put("name", tag.getName());
+                            orgTagDetails.add(tagInfo);
+                        }
+                    });
+        }
+        userMap.put("orgTags", orgTagDetails);
+        userMap.put("primaryOrg", r.primaryOrg());
+        userMap.put("status", r.role() == User.Role.USER ? 1 : 0);
+        userMap.put("createdAt", r.createdAt());
+        userMap.put("usage", usageSnapshots.getOrDefault(
+                String.valueOf(r.id()),
+                usageQuotaService.getSnapshot(String.valueOf(r.id()))));
+
+        return userMap;
+    }
+
+    /**
+     * ZH-F07 baseline 路径（findAll 内存过滤 + subList 分页 + N+1 orgTags）。
+     * 仅供实验采集 baseline 指标使用，不是生产路径。生产路径走 {@link #getUserList}。
+     * 启用方式：application-experiment.yml 设 zhishu.experiment.user-list-arm=baseline 时由 getUserList 分派到本方法。
+     * 语义、字段、total、排序与改造前逐字一致；响应字段白名单与 after 路径相同。
+     */
+    public Map<String, Object> getUserListBaseline(String keyword, String orgTag, Integer status, int page, int size) {
+        int safePage = Math.max(page, 1);
+        int safeSize = size > 0 ? size : 10;
+        int pageIndex = safePage - 1;
         Pageable pageable = PageRequest.of(pageIndex, safeSize, Sort.by("createdAt").descending());
 
         List<User> filteredUsers = userRepository.findAll(Sort.by("createdAt").descending()).stream()
@@ -761,57 +893,53 @@ public class UserService {
         List<User> pageContent = start < end ? filteredUsers.subList(start, end) : Collections.emptyList();
         Page<User> userPage = new PageImpl<>(pageContent, pageable, filteredUsers.size());
 
-        // 转换为前端需要的格式
         Map<String, UsageQuotaService.UserUsageSnapshot> usageSnapshots = usageQuotaService.getSnapshots(
-                userPage.getContent().stream()
-                        .map(user -> String.valueOf(user.getId()))
-                        .toList()
-        );
+                userPage.getContent().stream().map(user -> String.valueOf(user.getId())).toList());
 
         List<Map<String, Object>> userList = userPage.getContent().stream()
-                .map(user -> {
-                    Map<String, Object> userMap = new HashMap<>();
-                    userMap.put("userId", user.getId());
-                    userMap.put("username", user.getUsername());
-
-                    // 获取用户组织标签的详细信息
-                    List<Map<String, String>> orgTagDetails = new ArrayList<>();
-                    if (user.getOrgTags() != null && !user.getOrgTags().isEmpty()) {
-                        Arrays.stream(user.getOrgTags().split(","))
-                                .forEach(tagId -> {
-                                    OrganizationTag tag = organizationTagRepository.findByTagId(tagId)
-                                            .orElse(null);
-                                    if (tag != null) {
-                                        Map<String, String> tagInfo = new HashMap<>();
-                                        tagInfo.put("tagId", tag.getTagId());
-                                        tagInfo.put("name", tag.getName());
-                                        orgTagDetails.add(tagInfo);
-                                    }
-                                });
-                    }
-
-                    userMap.put("orgTags", orgTagDetails);
-                    userMap.put("primaryOrg", user.getPrimaryOrg());
-                    userMap.put("status", user.getRole() == User.Role.USER ? 1 : 0);
-                    userMap.put("createdAt", user.getCreatedAt());
-                    userMap.put("usage", usageSnapshots.getOrDefault(
-                            String.valueOf(user.getId()),
-                            usageQuotaService.getSnapshot(String.valueOf(user.getId()))
-                    ));
-
-                    return userMap;
-                })
+                .map(user -> buildUserListRowMapFromEntity(user, usageSnapshots))
                 .collect(Collectors.toList());
 
-        // 构建返回结果
         Map<String, Object> result = new HashMap<>();
         result.put("content", userList);
         result.put("totalElements", userPage.getTotalElements());
         result.put("totalPages", userPage.getTotalPages());
         result.put("size", userPage.getSize());
-        result.put("number", userPage.getNumber() + 1); // 转换为从1开始的页码
-
+        result.put("number", userPage.getNumber() + 1);
         return result;
+    }
+
+    /**
+     * ZH-F07 baseline 的行组装（基于 User 实体，逐个 findByTagId 的 N+1 路径）。
+     * 仅供 {@link #getUserListBaseline} 使用，保持改造前 orgTags 明细行为。
+     */
+    private Map<String, Object> buildUserListRowMapFromEntity(
+            User user, Map<String, UsageQuotaService.UserUsageSnapshot> usageSnapshots) {
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("userId", user.getId());
+        userMap.put("username", user.getUsername());
+
+        List<Map<String, String>> orgTagDetails = new ArrayList<>();
+        if (user.getOrgTags() != null && !user.getOrgTags().isEmpty()) {
+            Arrays.stream(user.getOrgTags().split(","))
+                    .forEach(tagId -> {
+                        OrganizationTag tag = organizationTagRepository.findByTagId(tagId).orElse(null);
+                        if (tag != null) {
+                            Map<String, String> tagInfo = new HashMap<>();
+                            tagInfo.put("tagId", tag.getTagId());
+                            tagInfo.put("name", tag.getName());
+                            orgTagDetails.add(tagInfo);
+                        }
+                    });
+        }
+        userMap.put("orgTags", orgTagDetails);
+        userMap.put("primaryOrg", user.getPrimaryOrg());
+        userMap.put("status", user.getRole() == User.Role.USER ? 1 : 0);
+        userMap.put("createdAt", user.getCreatedAt());
+        userMap.put("usage", usageSnapshots.getOrDefault(
+                String.valueOf(user.getId()),
+                usageQuotaService.getSnapshot(String.valueOf(user.getId()))));
+        return userMap;
     }
 
     private boolean matchesUserListFilters(User user, String keyword, String orgTag, Integer status) {

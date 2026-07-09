@@ -1,7 +1,11 @@
 import { useAuthStore } from '@/store/modules/auth';
+import { runUploadPool } from '@/utils/uploadScheduler';
 import { SetupStoreId, UploadStatus } from '@/enum';
 import { REQUEST_ID_KEY } from '~/packages/axios/src';
 import { nanoid } from '~/packages/utils/src';
+
+/** ZH-F02: 分片上传有界并发度 (主档 4, 匹配 README 主结论预注册; env 可覆盖) */
+const UPLOAD_CONCURRENCY = Number(import.meta.env.VITE_UPLOAD_CONCURRENCY) || 4;
 
 export const useKnowledgeBaseStore = defineStore(SetupStoreId.KnowledgeBase, () => {
   const authStore = useAuthStore();
@@ -13,14 +17,11 @@ export const useKnowledgeBaseStore = defineStore(SetupStoreId.KnowledgeBase, () 
     return `${task.fileMd5}::${task.userId || currentUserId}`;
   }
 
-  async function uploadChunk(task: Api.KnowledgeBase.UploadTask): Promise<boolean> {
-    const totalChunks = Math.ceil(task.totalSize / chunkSize);
-
-    const chunkStart = task.chunkIndex * chunkSize;
+  async function uploadChunk(task: Api.KnowledgeBase.UploadTask, chunkIndex: number): Promise<boolean> {
+    const chunkStart = chunkIndex * chunkSize;
     const chunkEnd = Math.min(chunkStart + chunkSize, task.totalSize);
     const chunk = task.file.slice(chunkStart, chunkEnd);
 
-    task.chunk = chunk;
     const requestId = nanoid();
     task.requestIds ??= [];
     task.requestIds.push(requestId);
@@ -28,9 +29,9 @@ export const useKnowledgeBaseStore = defineStore(SetupStoreId.KnowledgeBase, () 
       url: '/upload/chunk',
       method: 'POST',
       data: {
-        file: task.chunk,
+        file: chunk,
         fileMd5: task.fileMd5,
-        chunkIndex: task.chunkIndex,
+        chunkIndex,
         totalSize: task.totalSize,
         fileName: task.fileName,
         orgTag: task.orgTag,
@@ -47,15 +48,15 @@ export const useKnowledgeBaseStore = defineStore(SetupStoreId.KnowledgeBase, () 
 
     if (error) return false;
 
-    // 更新任务状态
+    // 更新任务状态 (R10: 并集非替换 — 并发下响应非确定序到达, data.uploaded 为后端 bitmap 当时刻快照,
+    //   可能未含其他在飞 worker 的 SETBIT; 并集保证 uploadedChunks 单调只增, 与 Redis SETBIT 单调性一致,
+    //   避免 stale 快照覆盖导致 pool 收口后 length===totalChunks 失败 → merge 不触发 → 任务卡死)
     const updatedTask = tasks.value.find(t => getTaskIdentity(t) === getTaskIdentity(task))!;
-    updatedTask.uploadedChunks = data.uploaded;
+    updatedTask.uploadedChunks = Array.from(new Set([...updatedTask.uploadedChunks, ...data.uploaded])).sort(
+      (a, b) => a - b
+    );
     updatedTask.progress = Number.parseFloat(data.progress.toFixed(2));
 
-    if (data.uploaded.length === totalChunks) {
-      const success = await mergeFile(task);
-      if (!success) return false;
-    }
     return true;
   }
 
@@ -168,20 +169,24 @@ export const useKnowledgeBaseStore = defineStore(SetupStoreId.KnowledgeBase, () 
       if (task.uploadedChunks.length === totalChunks) {
         const success = await mergeFile(task);
         if (!success) throw new Error('文件合并失败');
+        return;
       }
-      // const promises = [];
-      // 遍历所有片数
+      // 剩余分片队列 (恢复友好: 跳过已传)
+      const remaining: number[] = [];
       for (let i = 0; i < totalChunks; i += 1) {
-        // 如果未上传，则上传
-        if (!task.uploadedChunks.includes(i)) {
-          task.chunkIndex = i;
-          // promises.push(uploadChunk(task))
-          // eslint-disable-next-line no-await-in-loop
-          const success = await uploadChunk(task);
-          if (!success) throw new Error('分片上传失败');
-        }
+        if (!task.uploadedChunks.includes(i)) remaining.push(i);
       }
-      // await Promise.all(promises)
+      // 有界并发 worker pool (R1/R2/R3): N workers 从 remaining 拉取下一 index, fail-fast
+      await runUploadPool(remaining, UPLOAD_CONCURRENCY, async i => {
+        const success = await uploadChunk(task, i);
+        if (!success) throw new Error(`分片 ${i} 上传失败`);
+      });
+      // merge 收口 (R2): pool 全成功后单次 merge, 无并发竞态
+      const updated = tasks.value.find(t => getTaskIdentity(t) === getTaskIdentity(task))!;
+      if (updated.uploadedChunks.length === totalChunks) {
+        const success = await mergeFile(task);
+        if (!success) throw new Error('文件合并失败');
+      }
     } catch (e) {
       console.error('%c [ 👉 upload error 👈 ]-168', 'font-size:16px; background:#94cc97; color:#d8ffdb;', e);
       // 如果上传失败，则将任务状态设置为中断
