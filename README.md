@@ -8,6 +8,25 @@
 - 前端: Vue 3 + TypeScript + Vite
 - 构建: Maven (后端) / pnpm (前端)
 
+## 文档入口
+
+| 材料 | 入口 | 说明 |
+|---|---|---|
+| 性能总报告 | [PERFORMANCE.md](PERFORMANCE.md) | 三项优化的核心指标、实验设计、MME 与复审摘要 |
+| 复现实验指南 | [REPRODUCE.md](REPRODUCE.md) | 统一列出依赖、命令、数据集、预期输出和常见问题 |
+| 证据索引 | [docs/performance/evidence-index.md](docs/performance/evidence-index.md) | claim 到脚本、统计结果、校验结果和 sha256 的映射 |
+| 公开边界 | [docs/performance/claims.md](docs/performance/claims.md) | 哪些结论可以写进 README/简历，哪些不能越界 |
+
+## 性能优化总览
+
+![Zhishu performance optimization overview](docs/performance/assets/overview.svg)
+
+| 优化项 | 核心结果 | 复现 | 证据 |
+|---|---|---|---|
+| 后台用户列表查询下推 | 100k 用户 P95 延迟降 53.59%，扫描行数降 99.96% | [复现](REPRODUCE.md#4-zh-f07-后台用户列表查询下推) | [证据](docs/performance/zh-f07-admin-query.md) |
+| Redis 流式写放大优化 | M 档 commands/answer 降 93.92%，bytes/answer 降 96.97% | [复现](REPRODUCE.md#5-zh-f05-redis-流式会话写放大优化) | [证据](docs/performance/zh-f05-redis-stream.md) |
+| 分片上传有界并发 | M 档端到端 median 降 54.81%，吞吐升 121.08% | [复现](REPRODUCE.md#6-zh-f02-知识库分片上传有界并发) | [证据](docs/performance/zh-f02-upload.md) |
+
 ## 性能优化
 
 ### 后台用户列表查询 (ADMIN-USERS-LIST)

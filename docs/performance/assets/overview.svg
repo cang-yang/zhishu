@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="34.0" y="44.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#1f2937">Zhishu performance optimization overview</text>
+<text x="34.0" y="76.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#64748b">Public headline improvements from reviewed phase-three evidence</text>
+<line x1="170" y1="90" x2="900" y2="90" stroke="#e5e7eb"/>
+<text x="34.0" y="132.0" font-family="Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start" fill="#1f2937">ZH-F07 P95 latency reduction</text>
+<rect x="170" y="110" width="730" height="28" rx="6" fill="#f1f5f9"/>
+<rect x="170" y="110" width="323.1" height="28" rx="6" fill="#2563eb"/>
+<text x="505.1" y="130.0" font-family="Arial, sans-serif" font-size="14" font-weight="700" text-anchor="start" fill="#2563eb">53.59%</text>
+<text x="34.0" y="204.0" font-family="Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start" fill="#1f2937">ZH-F05 Redis commands reduction</text>
+<rect x="170" y="182" width="730" height="28" rx="6" fill="#f1f5f9"/>
+<rect x="170" y="182" width="566.3" height="28" rx="6" fill="#16a34a"/>
+<text x="748.3" y="202.0" font-family="Arial, sans-serif" font-size="14" font-weight="700" text-anchor="start" fill="#16a34a">93.92%</text>
+<text x="34.0" y="276.0" font-family="Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start" fill="#1f2937">ZH-F02 upload median reduction</text>
+<rect x="170" y="254" width="730" height="28" rx="6" fill="#f1f5f9"/>
+<rect x="170" y="254" width="330.5" height="28" rx="6" fill="#dc2626"/>
+<text x="512.5" y="274.0" font-family="Arial, sans-serif" font-size="14" font-weight="700" text-anchor="start" fill="#dc2626">54.81%</text>
+<text x="34.0" y="348.0" font-family="Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start" fill="#1f2937">ZH-F02 throughput increase</text>
+<rect x="170" y="326" width="730" height="28" rx="6" fill="#f1f5f9"/>
+<rect x="170" y="326" width="730.0" height="28" rx="6" fill="#9333ea"/>
+<text x="912.0" y="346.0" font-family="Arial, sans-serif" font-size="14" font-weight="700" text-anchor="start" fill="#9333ea">121.08%</text>
+<text x="900.0" y="492.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#94a3b8">Source: reviewed Zhishu performance evidence</text>
+</svg>

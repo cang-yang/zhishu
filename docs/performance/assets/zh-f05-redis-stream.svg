@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="34.0" y="44.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#1f2937">ZH-F05 Redis streaming write amplification</text>
+<text x="34.0" y="76.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#64748b">M scale, REAL Redis commandstats, n=25/arm</text>
+<rect x="34" y="92" width="14" height="14" rx="3" fill="#94a3b8"/>
+<text x="56.0" y="104.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">baseline</text>
+<rect x="136" y="92" width="14" height="14" rx="3" fill="#2563eb"/>
+<text x="158.0" y="104.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">after</text>
+<text x="34.0" y="149.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start" fill="#1f2937">commands / answer</text>
+<text x="34.0" y="171.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">93.92% lower</text>
+<rect x="210" y="118" width="620" height="24" rx="5" fill="#f1f5f9"/>
+<rect x="210" y="118" width="1.4" height="24" rx="5" fill="#94a3b8"/>
+<text x="221.4" y="136.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">11070.1</text>
+<rect x="210" y="150" width="620" height="24" rx="5" fill="#f1f5f9"/>
+<rect x="210" y="150" width="0.1" height="24" rx="5" fill="#2563eb"/>
+<text x="220.1" y="168.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start" fill="#2563eb">673.08</text>
+<text x="34.0" y="241.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start" fill="#1f2937">bytes / answer</text>
+<text x="34.0" y="263.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">96.97% lower</text>
+<rect x="210" y="210" width="620" height="24" rx="5" fill="#f1f5f9"/>
+<rect x="210" y="210" width="620.0" height="24" rx="5" fill="#94a3b8"/>
+<text x="840.0" y="228.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">4.75689e+06</text>
+<rect x="210" y="242" width="620" height="24" rx="5" fill="#f1f5f9"/>
+<rect x="210" y="242" width="18.8" height="24" rx="5" fill="#2563eb"/>
+<text x="238.8" y="260.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start" fill="#2563eb">144111</text>
+<text x="34.0" y="333.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start" fill="#1f2937">P95 latency (ms)</text>
+<text x="34.0" y="355.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">after/baseline=0.0413</text>
+<rect x="210" y="302" width="620" height="24" rx="5" fill="#f1f5f9"/>
+<rect x="210" y="302" width="0.0" height="24" rx="5" fill="#94a3b8"/>
+<text x="220.0" y="320.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">139.6</text>
+<rect x="210" y="334" width="620" height="24" rx="5" fill="#f1f5f9"/>
+<rect x="210" y="334" width="0.0" height="24" rx="5" fill="#2563eb"/>
+<text x="220.0" y="352.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start" fill="#2563eb">5.8</text>
+<text x="830.0" y="532.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#94a3b8">Lower is better unless noted in label</text>
+</svg>
