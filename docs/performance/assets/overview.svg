@@ -1,23 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520">
-<rect width="100%" height="100%" fill="#ffffff"/>
-<text x="34.0" y="44.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#1f2937">Zhishu performance optimization overview</text>
-<text x="34.0" y="76.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#64748b">Public headline improvements from reviewed phase-three evidence</text>
-<line x1="170" y1="90" x2="900" y2="90" stroke="#e5e7eb"/>
-<text x="34.0" y="132.0" font-family="Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start" fill="#1f2937">ZH-F07 P95 latency reduction</text>
-<rect x="170" y="110" width="730" height="28" rx="6" fill="#f1f5f9"/>
-<rect x="170" y="110" width="323.1" height="28" rx="6" fill="#2563eb"/>
-<text x="505.1" y="130.0" font-family="Arial, sans-serif" font-size="14" font-weight="700" text-anchor="start" fill="#2563eb">53.59%</text>
-<text x="34.0" y="204.0" font-family="Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start" fill="#1f2937">ZH-F05 Redis commands reduction</text>
-<rect x="170" y="182" width="730" height="28" rx="6" fill="#f1f5f9"/>
-<rect x="170" y="182" width="566.3" height="28" rx="6" fill="#16a34a"/>
-<text x="748.3" y="202.0" font-family="Arial, sans-serif" font-size="14" font-weight="700" text-anchor="start" fill="#16a34a">93.92%</text>
-<text x="34.0" y="276.0" font-family="Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start" fill="#1f2937">ZH-F02 upload median reduction</text>
-<rect x="170" y="254" width="730" height="28" rx="6" fill="#f1f5f9"/>
-<rect x="170" y="254" width="330.5" height="28" rx="6" fill="#dc2626"/>
-<text x="512.5" y="274.0" font-family="Arial, sans-serif" font-size="14" font-weight="700" text-anchor="start" fill="#dc2626">54.81%</text>
-<text x="34.0" y="348.0" font-family="Arial, sans-serif" font-size="15" font-weight="600" text-anchor="start" fill="#1f2937">ZH-F02 throughput increase</text>
-<rect x="170" y="326" width="730" height="28" rx="6" fill="#f1f5f9"/>
-<rect x="170" y="326" width="730.0" height="28" rx="6" fill="#9333ea"/>
-<text x="912.0" y="346.0" font-family="Arial, sans-serif" font-size="14" font-weight="700" text-anchor="start" fill="#9333ea">121.08%</text>
-<text x="900.0" y="492.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#94a3b8">Source: reviewed Zhishu performance evidence</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="504" viewBox="0 0 960 504">
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<text x="50" y="52" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="30" font-weight="800" fill="#172033" text-anchor="start">智枢性能优化总览</text>
+<text x="50" y="84" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="15" font-weight="400" fill="#64748b" text-anchor="start">三项优化均绑定复现脚本、统计脚本、独立校验和公开证据索引</text>
+<rect x="50" y="126" width="420" height="146" rx="14" fill="#ffffff" stroke="#dbe3ef"/>
+<rect x="50" y="126" width="6" height="146" rx="3" fill="#2563eb"/>
+<text x="78" y="168" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="17" font-weight="700" fill="#172033" text-anchor="start">后台用户列表查询下推</text>
+<text x="78" y="220" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="34" font-weight="800" fill="#2563eb" text-anchor="start">P95 降 53.59%</text>
+<text x="78" y="250" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">100k 用户数据集，892ms -&gt; 414ms</text>
+<rect x="510" y="126" width="420" height="146" rx="14" fill="#ffffff" stroke="#dbe3ef"/>
+<rect x="510" y="126" width="6" height="146" rx="3" fill="#16a34a"/>
+<text x="538" y="168" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="17" font-weight="700" fill="#172033" text-anchor="start">Redis 流式写放大优化</text>
+<text x="538" y="220" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="34" font-weight="800" fill="#16a34a" text-anchor="start">命令数降 93.92%</text>
+<text x="538" y="250" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">M 档 commands/answer，11070.08 -&gt; 673.08</text>
+<rect x="50" y="302" width="420" height="146" rx="14" fill="#ffffff" stroke="#dbe3ef"/>
+<rect x="50" y="302" width="6" height="146" rx="3" fill="#dc2626"/>
+<text x="78" y="344" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="17" font-weight="700" fill="#172033" text-anchor="start">分片上传有界并发</text>
+<text x="78" y="396" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="34" font-weight="800" fill="#dc2626" text-anchor="start">耗时降 54.81%</text>
+<text x="78" y="426" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">M 档 64MiB/13 chunks，1855.1ms -&gt; 838.3ms</text>
+<rect x="510" y="302" width="420" height="146" rx="14" fill="#ffffff" stroke="#dbe3ef"/>
+<rect x="510" y="302" width="6" height="146" rx="3" fill="#7c3aed"/>
+<text x="538" y="344" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="17" font-weight="700" fill="#172033" text-anchor="start">上传吞吐提升</text>
+<text x="538" y="396" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="34" font-weight="800" fill="#7c3aed" text-anchor="start">吞吐升 121.08%</text>
+<text x="538" y="426" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">M 档 34.54 -&gt; 76.36 MiB/s</text>
+<text x="910" y="480" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="end">数据来源：智枢阶段三性能证据与独立校验记录</text>
 </svg>

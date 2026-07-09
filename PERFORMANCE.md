@@ -1,6 +1,6 @@
-# Zhishu 性能优化实验文档 (PERFORMANCE)
+# 智枢性能优化实验文档
 
-本文件记录 Zhishu-main 项目的性能优化实验链路、度量护栏 (MME)、原始结果与复现步骤。每项优化均经 G1-G6 闸口（计划 → 实现 → 代码审查 → 实验 → 结果审查 → 发布），独立子代理复审 ≥95 分、0 阻塞。所有 claim 可经 `claim-manifest.json` 单文件追溯到证据路径 + sha256。
+本文件记录智枢项目的性能优化实验链路、度量护栏 (MME)、原始结果与复现步骤。每项优化均经 G1-G6 闸口（计划 → 实现 → 代码审查 → 实验 → 结果审查 → 发布），独立子代理复审 ≥95 分、0 阻塞。所有 claim 可经 `claim-manifest.json` 单文件追溯到证据路径 + sha256。
 
 ## 阅读入口
 
@@ -14,7 +14,7 @@
 
 ## 图表总览
 
-![Zhishu performance optimization overview](docs/performance/assets/overview.svg)
+![智枢性能优化总览](docs/performance/assets/overview.svg)
 
 ### ZH-F07 后台用户列表查询下推
 
