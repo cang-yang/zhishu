@@ -1,0 +1,91 @@
+# ZH-F05 experiment profile — Redis 流式会话写放大实验采集专用
+# 仅 zhishu.experiment.arm 由采集脚本按 run 切换 baseline/after, feature 固定 ZH-F05。
+# 不含任何生产密钥; 脱敏快照在 G4 冻结时生成 sanitizedEnvSha256。
+# 独立 redis database 14 (ZH-F07 用 15), 隔离 commandstats/MONITOR 请求级归因。
+
+server:
+  port: 18082
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/zhishu_exp_f05?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf-8
+    username: root
+    password: ZhaoYang1314.
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: false
+  data:
+    redis:
+      host: 192.168.241.128
+      port: 6379
+      password: ZhaoYang1314.
+      database: 14
+  kafka:
+    enabled: false
+    bootstrap-servers: 127.0.0.1:9092
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 100MB
+
+minio:
+  endpoint: http://localhost:9000
+  accessKey: minioadmin
+  secretKey: minioadmin
+  bucketName: zhishu-exp
+  publicUrl: http://localhost:9000
+
+jwt:
+  secret-key: XeJw0yUoFDJWSNbWYFVEIXGfO8XgHrQLrIkKci5J9eA=
+
+admin:
+  bootstrap:
+    username: admin
+    password: ZhiShu2026Admin
+    primary-org: default
+    org-tags: default,admin
+
+app:
+  auth:
+    registration:
+      mode: INVITE_ONLY
+
+security:
+  allowed-origins: http://localhost:*,http://127.0.0.1:*
+
+elasticsearch:
+  init:
+    enabled: false
+
+wx:
+  pay:
+    enable: false
+
+# ZH-F05 实验 arm 门控: 采集脚本按 run 设置 ZH_F05_ARM=baseline 或 after (默认 after 生产路径)
+# isBaselineArm(): feature=ZH-F05 && arm=baseline 走原 saveMessage+refresh 路径; 否则走 APPEND buffer 优化路径
+zhishu:
+  experiment:
+    feature: ZH-F05
+    arm: ${ZH_F05_ARM:after}
+  redis:
+    buffer:
+      ttl-seconds: 3600
+
+logging:
+  level:
+    org.springframework.web: WARN
+    org.springframework.boot.autoconfigure.web.servlet: WARN
+    org.springframework.security: WARN
+    com.canggo.zhishu: INFO
+    io.minio: WARN
+    org.hibernate.SQL: WARN
+    org.apache.tika: WARN

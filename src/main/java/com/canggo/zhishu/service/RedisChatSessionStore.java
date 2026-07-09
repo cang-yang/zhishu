@@ -4,10 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.canggo.zhishu.exception.CustomException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -27,6 +29,10 @@ public class RedisChatSessionStore {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     private static final int SESSION_TITLE_MAX_LENGTH = 24;
     private static final int SESSION_PREVIEW_MAX_LENGTH = 72;
+
+    @Value("${zhishu.experiment.feature:none}") private String experimentFeature;
+    @Value("${zhishu.experiment.arm:after}") private String experimentArm;
+    @Value("${zhishu.redis.buffer.ttl-seconds:3600}") private long bufferTtlSeconds;
 
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
@@ -101,7 +107,14 @@ public class RedisChatSessionStore {
             return null;
         }
         try {
-            return objectMapper.readValue(json, ChatMessageRecord.class);
+            ChatMessageRecord message = objectMapper.readValue(json, ChatMessageRecord.class);
+            if (("loading".equals(message.status()) || "pending".equals(message.status())) && !isBaselineArm()) {
+                String buffered = redisTemplate.opsForValue().get(messageBufferKey(messageId));
+                if (buffered != null) {
+                    return message.withContent(buffered);
+                }
+            }
+            return message;
         } catch (JsonProcessingException e) {
             throw new CustomException("解析消息失败", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -163,26 +176,79 @@ public class RedisChatSessionStore {
 
     public ChatMessageRecord appendAssistantChunk(String userId, String messageId, String chunk) {
         ChatMessageRecord current = requireOwnedMessage(userId, messageId);
-        ChatMessageRecord updated = current.withContent((current.content() == null ? "" : current.content()) + chunk)
+        if (isBaselineArm()) {
+            ChatMessageRecord updated = current.withContent((current.content() == null ? "" : current.content()) + chunk)
+                    .withStatus("loading")
+                    .withUpdatedAt(currentTimestamp());
+            saveMessage(updated);
+            refreshSessionAfterMessageMutation(userId, updated.sessionId());
+            return updated;
+        }
+        String bufferKey = messageBufferKey(messageId);
+        if (appendWithRetry(bufferKey, chunk)) {
+            return current.withContent((current.content() == null ? "" : current.content()) + chunk)
+                    .withStatus("loading")
+                    .withUpdatedAt(currentTimestamp());
+        }
+        return appendBaselinePath(current, userId, chunk, bufferKey);
+    }
+
+    private boolean appendWithRetry(String bufferKey, String chunk) {
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try {
+                redisTemplate.opsForValue().append(bufferKey, chunk);
+                try {
+                    redisTemplate.expire(bufferKey, Duration.ofSeconds(bufferTtlSeconds));
+                } catch (Exception expireEx) {
+                    // TTL 未刷新, 下次 APPEND 后重试 EXPIRE
+                }
+                return true;
+            } catch (Exception appendEx) {
+                try { Thread.sleep(100); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); return false; }
+            }
+        }
+        return false;
+    }
+
+    private ChatMessageRecord appendBaselinePath(ChatMessageRecord current, String userId, String chunk, String bufferKey) {
+        String buffered = redisTemplate.opsForValue().get(bufferKey);
+        String accumulated = (buffered == null ? "" : buffered) + chunk;
+        ChatMessageRecord updated = current.withContent(accumulated)
                 .withStatus("loading")
                 .withUpdatedAt(currentTimestamp());
         saveMessage(updated);
+        try {
+            redisTemplate.opsForValue().set(bufferKey, accumulated);
+            redisTemplate.expire(bufferKey, Duration.ofSeconds(bufferTtlSeconds));
+        } catch (Exception setEx) {
+            // SET 失败 (Redis 持续故障, 罕见窗口): refreshSession 可能覆盖 message.content, 当前 chunk 丢失; 接受此窗口, failAssistantMessage 兜底
+        }
         refreshSessionAfterMessageMutation(userId, updated.sessionId());
         return updated;
     }
 
     public ChatMessageRecord completeAssistantMessage(String userId, String messageId, Map<Integer, Map<String, Object>> referenceMappings) {
         ChatMessageRecord current = requireOwnedMessage(userId, messageId);
-        ChatMessageRecord updated = current.withStatus("finished")
+        // getMessage (经 requireOwnedMessage) 已在 loading||pending 态合并 buffer 到 current.content();
+        // 无需显式 GET buffer (消除冗余 GET, complete 命令数 8+2N)
+        String finalContent = current.content() == null ? "" : current.content();
+        ChatMessageRecord updated = current.withContent(finalContent)
+                .withStatus("finished")
                 .withReferenceMappings(referenceMappings)
                 .withUpdatedAt(currentTimestamp());
         saveMessage(updated);
         refreshSessionAfterMessageMutation(userId, updated.sessionId());
+        if (!isBaselineArm()) {
+            redisTemplate.delete(messageBufferKey(messageId));
+        }
         return updated;
     }
 
     public ChatMessageRecord failAssistantMessage(String userId, String messageId, String errorMessage) {
         ChatMessageRecord current = requireOwnedMessage(userId, messageId);
+        if (!isBaselineArm()) {
+            redisTemplate.delete(messageBufferKey(messageId));
+        }
         ChatMessageRecord updated = current.withStatus("error")
                 .withContent(errorMessage)
                 .withUpdatedAt(currentTimestamp());
@@ -519,6 +585,14 @@ public class RedisChatSessionStore {
 
     private String messageKey(String messageId) {
         return "chat:message:" + messageId;
+    }
+
+    private String messageBufferKey(String messageId) {
+        return "chat:message:" + messageId + ":buffer";
+    }
+
+    private boolean isBaselineArm() {
+        return "ZH-F05".equals(experimentFeature) && "baseline".equals(experimentArm);
     }
 
     public record ChatSessionMeta(
