@@ -1,0 +1,88 @@
+# ZH-F07 experiment profile — 实验采集专用
+# 仅 zhishu.experiment.user-list-arm 由采集脚本按 run 切换 baseline/after，其余字段固定。
+# 不含任何生产密钥；脱敏快照在 G4 冻结时生成 sanitizedEnvSha256。
+
+server:
+  port: 18081
+
+spring:
+  datasource:
+    # 独立 experiment schema，不动生产 zhishu.users
+    url: jdbc:mysql://localhost:3306/zhishu_exp_f07?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf-8
+    username: root
+    password: ZhaoYang1314.
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+  jpa:
+    hibernate:
+      # update: 自动创建缺失表（rate_limit_configs 等），不删已有的 users seed 数据
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        # 实验时打开 SQL 日志，统计脚本从日志解析扫描行数 / SQL 数
+        format_sql: false
+  data:
+    redis:
+      host: 192.168.241.128
+      port: 6379
+      password: ZhaoYang1314.
+      database: 15
+  kafka:
+    enabled: false
+    bootstrap-servers: 127.0.0.1:9092
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 100MB
+
+minio:
+  endpoint: http://localhost:9000
+  accessKey: minioadmin
+  secretKey: minioadmin
+  bucketName: zhishu-exp
+  publicUrl: http://localhost:9000
+
+jwt:
+  secret-key: XeJw0yUoFDJWSNbWYFVEIXGfO8XgHrQLrIkKci5J9eA=
+
+admin:
+  bootstrap:
+    username: admin
+    password: ZhiShu2026Admin
+    primary-org: default
+    org-tags: default,admin
+
+app:
+  auth:
+    registration:
+      mode: INVITE_ONLY
+
+security:
+  allowed-origins: http://localhost:*,http://127.0.0.1:*
+
+elasticsearch:
+  init:
+    enabled: false
+
+wx:
+  pay:
+    enable: false
+
+# ZH-F07 实验 arm 开关：采集脚本按 run 设置为 baseline 或 after（空=after 生产路径）
+zhishu:
+  experiment:
+    user-list-arm: after
+
+logging:
+  level:
+    org.springframework.web: WARN
+    org.springframework.boot.autoconfigure.web.servlet: WARN
+    org.springframework.security: WARN
+    com.canggo.zhishu: INFO
+    io.minio: WARN
+    org.hibernate.SQL: INFO
+    org.apache.tika: WARN

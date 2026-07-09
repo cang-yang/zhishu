@@ -715,6 +715,11 @@ public class AdminController {
     
     /**
      * 获取用户列表
+     *
+     * ZH-F07 实验双 arm：当请求带 ?arm=baseline 时跑改造前 findAll 内存路径；
+     * ?arm=after 或不带 arm 时走生产下推路径。
+     * 同进程内交替切换 arm，保证 baseline/after 公平对比（控制 JIT/GC/缓存/环境漂移）。
+     * arm 参数仅在实验 profile 下有效；生产 profile 忽略 arm，始终走 after。
      */
     @GetMapping("/users/list")
     public ResponseEntity<?> getUserList(
@@ -723,16 +728,17 @@ public class AdminController {
             @RequestParam(required = false) String orgTag,
             @RequestParam(required = false) Integer status,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String arm) {
+
         String adminUsername = jwtUtils.extractUsernameFromToken(token.replace("Bearer ", ""));
         validateAdmin(adminUsername);
-        
+
         try {
-            Map<String, Object> usersData = userService.getUserList(keyword, orgTag, status, page, size);
+            Map<String, Object> usersData = userService.getUserListForExperiment(keyword, orgTag, status, page, size, arm);
             return ResponseEntity.ok(Map.of(
-                "code", 200, 
-                "message", "获取用户列表成功", 
+                "code", 200,
+                "message", "获取用户列表成功",
                 "data", usersData
             ));
         } catch (CustomException e) {

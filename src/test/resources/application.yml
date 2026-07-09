@@ -30,6 +30,10 @@ spring:
 admin:
   bootstrap:
     enabled: false
+    username: admin
+    password: Admin@TestPwd2026
+    primary-org: default
+    org-tags: default,admin
 
 knowledge:
   bootstrap:
@@ -37,6 +41,10 @@ knowledge:
 
 jwt:
   secret-key: bXlfc2VjdXJlX2tleV8xMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc=
+
+model-provider:
+  security:
+    secret-key: YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=
 
 minio:
   endpoint: http://localhost:9000

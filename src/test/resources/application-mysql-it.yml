@@ -1,21 +1,21 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:zhishu;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    url: jdbc:mysql://localhost:3306/zhishu_test_f07?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
+    username: root
+    password: ZhaoYang1314.
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.MySQL8Dialect
   data:
     redis:
-      host: localhost
+      host: 192.168.241.128
       port: 6379
-      password:
+      password: ZhaoYang1314.
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
@@ -30,10 +30,6 @@ spring:
 admin:
   bootstrap:
     enabled: false
-    username: admin
-    password: Admin@TestPwd2026
-    primary-org: default
-    org-tags: default,admin
 
 knowledge:
   bootstrap:
@@ -77,6 +73,7 @@ logging:
   level:
     org.springframework: WARN
     com.canggo.zhishu: INFO
+    org.hibernate.SQL: WARN
 
 deepseek:
   api:
