@@ -1,6 +1,6 @@
-# Zhishu 性能优化实验文档 (PERFORMANCE)
+# 智枢性能优化实验文档
 
-本文件记录 Zhishu-main 项目的性能优化实验链路、度量护栏 (MME)、原始结果与复现步骤。每项优化均经 G1-G6 闸口（计划 → 实现 → 代码审查 → 实验 → 结果审查 → 发布），独立子代理复审 ≥95 分、0 阻塞。所有 claim 可经 `claim-manifest.json` 单文件追溯到证据路径 + sha256。
+本文件记录智枢项目的性能优化实验链路、度量护栏 (MME)、原始结果与复现步骤。每项优化均经 G1-G6 闸口（计划 → 实现 → 代码审查 → 实验 → 结果审查 → 发布），独立子代理复审 ≥95 分、0 阻塞。所有 claim 可经 `claim-manifest.json` 单文件追溯到证据路径 + sha256。
 
 ## 阅读入口
 
@@ -14,25 +14,25 @@
 
 ## 图表总览
 
-![Zhishu performance optimization overview](docs/performance/assets/overview.svg)
+![智枢性能优化总览](docs/performance/assets/overview.png)
 
 ### ZH-F07 后台用户列表查询下推
 
 详细说明：[docs/performance/zh-f07-admin-query.md](docs/performance/zh-f07-admin-query.md)
 
-![ZH-F07 后台用户列表查询下推](docs/performance/assets/zh-f07-admin-query.svg)
+![ZH-F07 后台用户列表查询下推](docs/performance/assets/zh-f07-admin-query.png)
 
 ### ZH-F05 Redis 流式会话写放大优化
 
 详细说明：[docs/performance/zh-f05-redis-stream.md](docs/performance/zh-f05-redis-stream.md)
 
-![ZH-F05 Redis 流式会话写放大优化](docs/performance/assets/zh-f05-redis-stream.svg)
+![ZH-F05 Redis 流式会话写放大优化](docs/performance/assets/zh-f05-redis-stream.png)
 
 ### ZH-F02 知识库分片上传有界并发
 
 详细说明：[docs/performance/zh-f02-upload.md](docs/performance/zh-f02-upload.md)
 
-![ZH-F02 知识库分片上传有界并发](docs/performance/assets/zh-f02-upload.svg)
+![ZH-F02 知识库分片上传有界并发](docs/performance/assets/zh-f02-upload.png)
 
 | 优化项 | 闸口 | G3 代码审查 | G5 结果审查 | MME | 状态 |
 |---|---|---|---|---|---|

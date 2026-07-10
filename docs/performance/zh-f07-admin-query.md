@@ -23,7 +23,7 @@
 | 峰值堆 | 1.36GB | 150MB | 降 88.96% |
 | 响应等价 | - | 100% | PASS |
 
-![ZH-F07 后台用户列表查询下推](assets/zh-f07-admin-query.svg)
+![ZH-F07 后台用户列表查询下推](assets/zh-f07-admin-query.png)
 
 ## 4. MME 判定
 

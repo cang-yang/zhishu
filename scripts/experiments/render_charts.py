@@ -1,26 +1,37 @@
-﻿#!/usr/bin/env python3
-"""Render public performance charts for Zhishu.
+#!/usr/bin/env python3
+"""Generate public SVG charts for 智枢 performance documentation.
 
-The script intentionally uses only Python's standard library so the charts can
-be regenerated on a clean machine without installing plotting dependencies.
+The charts are intentionally card-based instead of axis-based. The values have
+very different orders of magnitude, so fixed cards avoid crowded labels and
+make the README stable on GitHub without third-party plotting dependencies.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSET_DIR = ROOT / "docs" / "performance" / "assets"
 
+FONT = "Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif"
+BG = "#f8fafc"
+INK = "#172033"
+MUTED = "#64748b"
+BORDER = "#dbe3ef"
+BLUE = "#2563eb"
+GREEN = "#16a34a"
+RED = "#dc2626"
+PURPLE = "#7c3aed"
+
 
 @dataclass(frozen=True)
-class Bar:
-    label: str
-    value: float
-    color: str
+class MetricCard:
+    title: str
+    value: str
+    subtitle: str
+    accent: str
 
 
 def esc(text: str) -> str:
@@ -32,87 +43,85 @@ def esc(text: str) -> str:
     )
 
 
-def svg_text(x: float, y: float, text: str, size: int = 14, weight: str = "400",
-             anchor: str = "start", fill: str = "#1f2937") -> str:
+def text(x: int, y: int, content: str, size: int = 16, weight: int = 400,
+         fill: str = INK, anchor: str = "start") -> str:
     return (
-        f'<text x="{x:.1f}" y="{y:.1f}" font-family="Arial, sans-serif" '
-        f'font-size="{size}" font-weight="{weight}" text-anchor="{anchor}" '
-        f'fill="{fill}">{esc(text)}</text>'
+        f'<text x="{x}" y="{y}" font-family="{FONT}" font-size="{size}" '
+        f'font-weight="{weight}" fill="{fill}" text-anchor="{anchor}">'
+        f'{esc(content)}</text>'
     )
 
 
-def render_bar_chart(title: str, subtitle: str, bars: Iterable[Bar], output: Path,
-                     width: int = 960, height: int = 520, unit: str = "") -> None:
-    bars = list(bars)
-    margin_left = 170
-    margin_right = 60
-    margin_top = 110
-    row_h = 72
-    bar_h = 28
-    chart_w = width - margin_left - margin_right
-    max_value = max(bar.value for bar in bars) or 1
+def panel(x: int, y: int, w: int, h: int, accent: str) -> list[str]:
+    return [
+        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="14" fill="#ffffff" stroke="{BORDER}"/>',
+        f'<rect x="{x}" y="{y}" width="6" height="{h}" rx="3" fill="{accent}"/>',
+    ]
+
+
+def render_metric_grid(title: str, subtitle: str, cards: list[MetricCard],
+                       output: Path, width: int = 960) -> None:
+    cols = 2
+    card_w = 420
+    card_h = 146
+    gap_x = 40
+    gap_y = 30
+    left = 50
+    top = 126
+    rows = (len(cards) + cols - 1) // cols
+    height = top + rows * card_h + (rows - 1) * gap_y + 56
 
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
-        '<rect width="100%" height="100%" fill="#ffffff"/>',
-        svg_text(34, 44, title, 26, "700"),
-        svg_text(34, 76, subtitle, 14, "400", fill="#64748b"),
-        f'<line x1="{margin_left}" y1="{margin_top - 20}" x2="{width - margin_right}" y2="{margin_top - 20}" stroke="#e5e7eb"/>',
+        f'<rect width="100%" height="100%" fill="{BG}"/>',
+        text(50, 52, title, 30, 800),
+        text(50, 84, subtitle, 15, 400, MUTED),
     ]
 
-    for idx, bar in enumerate(bars):
-        y = margin_top + idx * row_h
-        w = chart_w * (bar.value / max_value)
+    for idx, card in enumerate(cards):
+        col = idx % cols
+        row = idx // cols
+        x = left + col * (card_w + gap_x)
+        y = top + row * (card_h + gap_y)
+        parts.extend(panel(x, y, card_w, card_h, card.accent))
         parts.extend([
-            svg_text(34, y + 22, bar.label, 15, "600"),
-            f'<rect x="{margin_left}" y="{y}" width="{chart_w}" height="{bar_h}" rx="6" fill="#f1f5f9"/>',
-            f'<rect x="{margin_left}" y="{y}" width="{w:.1f}" height="{bar_h}" rx="6" fill="{bar.color}"/>',
-            svg_text(margin_left + w + 12, y + 20, f"{bar.value:g}{unit}", 14, "700", fill=bar.color),
+            text(x + 28, y + 42, card.title, 17, 700),
+            text(x + 28, y + 94, card.value, 34, 800, card.accent),
+            text(x + 28, y + 124, card.subtitle, 13, 400, MUTED),
         ])
 
-    parts.append(svg_text(width - margin_right, height - 28, "Source: reviewed Zhishu performance evidence", 12, "400", "end", "#94a3b8"))
+    parts.append(text(width - 50, height - 24, "数据来源：智枢阶段三性能证据与独立校验记录", 13, 400, "#94a3b8", "end"))
     parts.append("</svg>")
     output.write_text("\n".join(parts), encoding="utf-8")
 
 
-def render_grouped_chart(title: str, subtitle: str, groups: list[tuple[str, float, float, str]],
-                         output: Path, width: int = 980, height: int = 560) -> None:
-    margin_left = 210
-    margin_right = 150
-    margin_top = 118
-    row_h = 92
-    bar_h = 24
-    gap = 8
-    chart_w = width - margin_left - margin_right
-    max_value = max(max(base, after) for _, base, after, _ in groups) or 1
+def render_comparison(title: str, subtitle: str, cards: list[MetricCard],
+                      output: Path, width: int = 960) -> None:
+    card_w = 273
+    card_h = 164
+    gap = 20
+    left = 50
+    top = 128
+    height = top + card_h + 72
 
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
-        '<rect width="100%" height="100%" fill="#ffffff"/>',
-        svg_text(34, 44, title, 26, "700"),
-        svg_text(34, 76, subtitle, 14, "400", fill="#64748b"),
-        '<rect x="34" y="92" width="14" height="14" rx="3" fill="#94a3b8"/>',
-        svg_text(56, 104, "baseline", 12, "600", fill="#475569"),
-        '<rect x="136" y="92" width="14" height="14" rx="3" fill="#2563eb"/>',
-        svg_text(158, 104, "after", 12, "600", fill="#475569"),
+        f'<rect width="100%" height="100%" fill="{BG}"/>',
+        text(50, 52, title, 30, 800),
+        text(50, 84, subtitle, 15, 400, MUTED),
     ]
 
-    for idx, (label, baseline, after, note) in enumerate(groups):
-        y = margin_top + idx * row_h
-        base_w = chart_w * (baseline / max_value)
-        after_w = chart_w * (after / max_value)
+    for idx, card in enumerate(cards):
+        x = left + idx * (card_w + gap)
+        y = top
+        parts.extend(panel(x, y, card_w, card_h, card.accent))
         parts.extend([
-            svg_text(34, y + 31, label, 15, "700"),
-            svg_text(34, y + 53, note, 12, "400", fill="#64748b"),
-            f'<rect x="{margin_left}" y="{y}" width="{chart_w}" height="{bar_h}" rx="5" fill="#f1f5f9"/>',
-            f'<rect x="{margin_left}" y="{y}" width="{base_w:.1f}" height="{bar_h}" rx="5" fill="#94a3b8"/>',
-            svg_text(margin_left + base_w + 10, y + 18, f"{baseline:g}", 12, "600", fill="#475569"),
-            f'<rect x="{margin_left}" y="{y + bar_h + gap}" width="{chart_w}" height="{bar_h}" rx="5" fill="#f1f5f9"/>',
-            f'<rect x="{margin_left}" y="{y + bar_h + gap}" width="{after_w:.1f}" height="{bar_h}" rx="5" fill="#2563eb"/>',
-            svg_text(margin_left + after_w + 10, y + bar_h + gap + 18, f"{after:g}", 12, "700", fill="#2563eb"),
+            text(x + 28, y + 42, card.title, 16, 700),
+            text(x + 24, y + 98, card.value, 28, 800, card.accent),
+            text(x + 24, y + 130, card.subtitle, 12, 400, MUTED),
         ])
 
-    parts.append(svg_text(width - margin_right, height - 28, "Lower is better unless noted in label", 12, "400", "end", "#94a3b8"))
+    parts.append(text(width - 50, height - 24, "baseline 与 after 使用同一实验协议对比", 13, 400, "#94a3b8", "end"))
     parts.append("</svg>")
     output.write_text("\n".join(parts), encoding="utf-8")
 
@@ -120,48 +129,47 @@ def render_grouped_chart(title: str, subtitle: str, groups: list[tuple[str, floa
 def main() -> None:
     ASSET_DIR.mkdir(parents=True, exist_ok=True)
 
-    render_bar_chart(
-        "Zhishu performance optimization overview",
-        "Public headline improvements from reviewed phase-three evidence",
+    render_metric_grid(
+        "智枢性能优化总览",
+        "三项优化均绑定复现脚本、统计脚本、独立校验和公开证据索引",
         [
-            Bar("ZH-F07 P95 latency reduction", 53.59, "#2563eb"),
-            Bar("ZH-F05 Redis commands reduction", 93.92, "#16a34a"),
-            Bar("ZH-F02 upload median reduction", 54.81, "#dc2626"),
-            Bar("ZH-F02 throughput increase", 121.08, "#9333ea"),
+            MetricCard("后台用户列表查询下推", "P95 降 53.59%", "100k 用户数据集，892ms -> 414ms", BLUE),
+            MetricCard("Redis 流式写放大优化", "命令数降 93.92%", "M 档 commands/answer，11070.08 -> 673.08", GREEN),
+            MetricCard("分片上传有界并发", "耗时降 54.81%", "M 档 64MiB/13 chunks，1855.1ms -> 838.3ms", RED),
+            MetricCard("上传吞吐提升", "吞吐升 121.08%", "M 档 34.54 -> 76.36 MiB/s", PURPLE),
         ],
         ASSET_DIR / "overview.svg",
-        unit="%",
     )
 
-    render_grouped_chart(
-        "ZH-F07 admin user list pushdown",
-        "100k synthetic users, MySQL 8.0, n=200/arm",
+    render_comparison(
+        "ZH-F07 后台用户列表查询下推",
+        "数据库过滤、排序、分页和 DTO 投影替代 findAll 内存处理",
         [
-            ("P95 latency (ms)", 892, 414, "53.59% lower"),
-            ("SQL scanned rows", 98950, 40, "99.96% lower"),
-            ("Peak heap (MB)", 1393, 150, "88.96% lower"),
+            MetricCard("P95 延迟", "下降 53.59%", "892ms -> 414ms", BLUE),
+            MetricCard("SQL 扫描行数", "下降 99.96%", "98950 -> 40", GREEN),
+            MetricCard("峰值堆占用", "下降 88.96%", "1.36GB -> 150MB", PURPLE),
         ],
         ASSET_DIR / "zh-f07-admin-query.svg",
     )
 
-    render_grouped_chart(
-        "ZH-F05 Redis streaming write amplification",
-        "M scale, REAL Redis commandstats, n=25/arm",
+    render_comparison(
+        "ZH-F05 Redis 流式会话写放大优化",
+        "每 chunk 重写 session 改为 APPEND buffer，最终合并保持消息等价",
         [
-            ("commands / answer", 11070.08, 673.08, "93.92% lower"),
-            ("bytes / answer", 4756894, 144111, "96.97% lower"),
-            ("P95 latency (ms)", 139.6, 5.8, "after/baseline=0.0413"),
+            MetricCard("commands / answer", "下降 93.92%", "11070.08 -> 673.08", GREEN),
+            MetricCard("bytes / answer", "下降 96.97%", "4756894 -> 144111", BLUE),
+            MetricCard("P95 延迟", "139.6ms -> 5.8ms", "after / baseline = 0.0413", PURPLE),
         ],
         ASSET_DIR / "zh-f05-redis-stream.svg",
     )
 
-    render_grouped_chart(
-        "ZH-F02 bounded-concurrency chunk upload",
-        "M scale 64MiB/13 chunks, REAL backend HTTP",
+    render_comparison(
+        "ZH-F02 知识库分片上传有界并发",
+        "前端串行上传改为 concurrency=4 的 worker pool，后端保持零改动",
         [
-            ("median end-to-end (ms)", 1855.1, 838.3, "54.81% lower"),
-            ("P90 ratio marker", 100, 52.76, "after/baseline=0.5276"),
-            ("throughput marker", 34.54, 76.36, "121.08% higher"),
+            MetricCard("端到端 median", "下降 54.81%", "1855.1ms -> 838.3ms", RED),
+            MetricCard("median 吞吐", "提升 121.08%", "34.54 -> 76.36 MiB/s", PURPLE),
+            MetricCard("恢复与完整性", "3/3 + SHA256", "恢复、合并、隔离护栏通过", BLUE),
         ],
         ASSET_DIR / "zh-f02-upload.svg",
     )

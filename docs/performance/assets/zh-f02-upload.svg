@@ -1,34 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560">
-<rect width="100%" height="100%" fill="#ffffff"/>
-<text x="34.0" y="44.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#1f2937">ZH-F02 bounded-concurrency chunk upload</text>
-<text x="34.0" y="76.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#64748b">M scale 64MiB/13 chunks, REAL backend HTTP</text>
-<rect x="34" y="92" width="14" height="14" rx="3" fill="#94a3b8"/>
-<text x="56.0" y="104.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">baseline</text>
-<rect x="136" y="92" width="14" height="14" rx="3" fill="#2563eb"/>
-<text x="158.0" y="104.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">after</text>
-<text x="34.0" y="149.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start" fill="#1f2937">median end-to-end (ms)</text>
-<text x="34.0" y="171.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">54.81% lower</text>
-<rect x="210" y="118" width="620" height="24" rx="5" fill="#f1f5f9"/>
-<rect x="210" y="118" width="620.0" height="24" rx="5" fill="#94a3b8"/>
-<text x="840.0" y="136.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">1855.1</text>
-<rect x="210" y="150" width="620" height="24" rx="5" fill="#f1f5f9"/>
-<rect x="210" y="150" width="280.2" height="24" rx="5" fill="#2563eb"/>
-<text x="500.2" y="168.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start" fill="#2563eb">838.3</text>
-<text x="34.0" y="241.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start" fill="#1f2937">P90 ratio marker</text>
-<text x="34.0" y="263.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">after/baseline=0.5276</text>
-<rect x="210" y="210" width="620" height="24" rx="5" fill="#f1f5f9"/>
-<rect x="210" y="210" width="33.4" height="24" rx="5" fill="#94a3b8"/>
-<text x="253.4" y="228.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">100</text>
-<rect x="210" y="242" width="620" height="24" rx="5" fill="#f1f5f9"/>
-<rect x="210" y="242" width="17.6" height="24" rx="5" fill="#2563eb"/>
-<text x="237.6" y="260.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start" fill="#2563eb">52.76</text>
-<text x="34.0" y="333.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start" fill="#1f2937">throughput marker</text>
-<text x="34.0" y="355.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">121.08% higher</text>
-<rect x="210" y="302" width="620" height="24" rx="5" fill="#f1f5f9"/>
-<rect x="210" y="302" width="11.5" height="24" rx="5" fill="#94a3b8"/>
-<text x="231.5" y="320.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">34.54</text>
-<rect x="210" y="334" width="620" height="24" rx="5" fill="#f1f5f9"/>
-<rect x="210" y="334" width="25.5" height="24" rx="5" fill="#2563eb"/>
-<text x="245.5" y="352.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start" fill="#2563eb">76.36</text>
-<text x="830.0" y="532.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#94a3b8">Lower is better unless noted in label</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="364" viewBox="0 0 960 364">
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<text x="50" y="52" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="30" font-weight="800" fill="#172033" text-anchor="start">ZH-F02 知识库分片上传有界并发</text>
+<text x="50" y="84" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="15" font-weight="400" fill="#64748b" text-anchor="start">前端串行上传改为 concurrency=4 的 worker pool，后端保持零改动</text>
+<rect x="50" y="128" width="273" height="164" rx="14" fill="#ffffff" stroke="#dbe3ef"/>
+<rect x="50" y="128" width="6" height="164" rx="3" fill="#dc2626"/>
+<text x="78" y="170" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="16" font-weight="700" fill="#172033" text-anchor="start">端到端 median</text>
+<text x="74" y="226" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="28" font-weight="800" fill="#dc2626" text-anchor="start">下降 54.81%</text>
+<text x="74" y="258" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">1855.1ms -&gt; 838.3ms</text>
+<rect x="343" y="128" width="273" height="164" rx="14" fill="#ffffff" stroke="#dbe3ef"/>
+<rect x="343" y="128" width="6" height="164" rx="3" fill="#7c3aed"/>
+<text x="371" y="170" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="16" font-weight="700" fill="#172033" text-anchor="start">median 吞吐</text>
+<text x="367" y="226" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="28" font-weight="800" fill="#7c3aed" text-anchor="start">提升 121.08%</text>
+<text x="367" y="258" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">34.54 -&gt; 76.36 MiB/s</text>
+<rect x="636" y="128" width="273" height="164" rx="14" fill="#ffffff" stroke="#dbe3ef"/>
+<rect x="636" y="128" width="6" height="164" rx="3" fill="#2563eb"/>
+<text x="664" y="170" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="16" font-weight="700" fill="#172033" text-anchor="start">恢复与完整性</text>
+<text x="660" y="226" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="28" font-weight="800" fill="#2563eb" text-anchor="start">3/3 + SHA256</text>
+<text x="660" y="258" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">恢复、合并、隔离护栏通过</text>
+<text x="910" y="340" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="end">baseline 与 after 使用同一实验协议对比</text>
 </svg>

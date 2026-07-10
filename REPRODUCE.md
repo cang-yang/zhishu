@@ -1,4 +1,4 @@
-﻿# Zhishu 性能实验复现指南
+﻿# 智枢性能实验复现指南
 
 本文是智枢性能优化实验的统一复现入口。详细结果见 [PERFORMANCE.md](PERFORMANCE.md)，证据索引见 [docs/performance/evidence-index.md](docs/performance/evidence-index.md)。
 
