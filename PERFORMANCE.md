@@ -14,25 +14,25 @@
 
 ## 图表总览
 
-![智枢性能优化总览](docs/performance/assets/overview.svg)
+![智枢性能优化总览](docs/performance/assets/overview.png)
 
 ### ZH-F07 后台用户列表查询下推
 
 详细说明：[docs/performance/zh-f07-admin-query.md](docs/performance/zh-f07-admin-query.md)
 
-![ZH-F07 后台用户列表查询下推](docs/performance/assets/zh-f07-admin-query.svg)
+![ZH-F07 后台用户列表查询下推](docs/performance/assets/zh-f07-admin-query.png)
 
 ### ZH-F05 Redis 流式会话写放大优化
 
 详细说明：[docs/performance/zh-f05-redis-stream.md](docs/performance/zh-f05-redis-stream.md)
 
-![ZH-F05 Redis 流式会话写放大优化](docs/performance/assets/zh-f05-redis-stream.svg)
+![ZH-F05 Redis 流式会话写放大优化](docs/performance/assets/zh-f05-redis-stream.png)
 
 ### ZH-F02 知识库分片上传有界并发
 
 详细说明：[docs/performance/zh-f02-upload.md](docs/performance/zh-f02-upload.md)
 
-![ZH-F02 知识库分片上传有界并发](docs/performance/assets/zh-f02-upload.svg)
+![ZH-F02 知识库分片上传有界并发](docs/performance/assets/zh-f02-upload.png)
 
 | 优化项 | 闸口 | G3 代码审查 | G5 结果审查 | MME | 状态 |
 |---|---|---|---|---|---|
