@@ -33,7 +33,7 @@ export async function runUploadPool(
       if (i >= indices.length) return;
       try {
         // eslint-disable-next-line no-await-in-loop
-        await worker(i);
+        await worker(indices[i]);
       } catch (e) {
         firstError ??= e;
         return;

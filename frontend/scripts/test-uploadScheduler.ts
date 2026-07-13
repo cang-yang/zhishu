@@ -43,6 +43,20 @@ test('all-indices-executed (c=4, n=10)', async () => {
   eq(new Set(done).size, 10, 'no duplicate execution');
 });
 
+// Case 1b: 断点续传的待上传分片可能不连续，必须派发真实分片编号而非数组位置
+test('sparse-indices-preserved (c=2)', async () => {
+  const done: number[] = [];
+  await runUploadPool([2, 5, 7], 2, async i => {
+    done.push(i);
+    await sleep(1);
+  });
+  eq(
+    done.slice().sort((x, y) => x - y),
+    [2, 5, 7],
+    'dispatches the sparse chunk indices exactly once'
+  );
+});
+
 // Case 2: concurrency=1 严格串行 (顺序保持, 无并发重叠)
 test('serial-order-strict (c=1)', async () => {
   const order: number[] = [];
