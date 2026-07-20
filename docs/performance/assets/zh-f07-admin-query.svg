@@ -1,34 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560">
-<rect width="100%" height="100%" fill="#ffffff"/>
-<text x="34.0" y="44.0" font-family="Arial, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#1f2937">ZH-F07 admin user list pushdown</text>
-<text x="34.0" y="76.0" font-family="Arial, sans-serif" font-size="14" font-weight="400" text-anchor="start" fill="#64748b">100k synthetic users, MySQL 8.0, n=200/arm</text>
-<rect x="34" y="92" width="14" height="14" rx="3" fill="#94a3b8"/>
-<text x="56.0" y="104.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">baseline</text>
-<rect x="136" y="92" width="14" height="14" rx="3" fill="#2563eb"/>
-<text x="158.0" y="104.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">after</text>
-<text x="34.0" y="149.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start" fill="#1f2937">P95 latency (ms)</text>
-<text x="34.0" y="171.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">53.59% lower</text>
-<rect x="210" y="118" width="620" height="24" rx="5" fill="#f1f5f9"/>
-<rect x="210" y="118" width="5.6" height="24" rx="5" fill="#94a3b8"/>
-<text x="225.6" y="136.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">892</text>
-<rect x="210" y="150" width="620" height="24" rx="5" fill="#f1f5f9"/>
-<rect x="210" y="150" width="2.6" height="24" rx="5" fill="#2563eb"/>
-<text x="222.6" y="168.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start" fill="#2563eb">414</text>
-<text x="34.0" y="241.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start" fill="#1f2937">SQL scanned rows</text>
-<text x="34.0" y="263.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">99.96% lower</text>
-<rect x="210" y="210" width="620" height="24" rx="5" fill="#f1f5f9"/>
-<rect x="210" y="210" width="620.0" height="24" rx="5" fill="#94a3b8"/>
-<text x="840.0" y="228.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">98950</text>
-<rect x="210" y="242" width="620" height="24" rx="5" fill="#f1f5f9"/>
-<rect x="210" y="242" width="0.3" height="24" rx="5" fill="#2563eb"/>
-<text x="220.3" y="260.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start" fill="#2563eb">40</text>
-<text x="34.0" y="333.0" font-family="Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start" fill="#1f2937">Peak heap (MB)</text>
-<text x="34.0" y="355.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#64748b">88.96% lower</text>
-<rect x="210" y="302" width="620" height="24" rx="5" fill="#f1f5f9"/>
-<rect x="210" y="302" width="8.7" height="24" rx="5" fill="#94a3b8"/>
-<text x="228.7" y="320.0" font-family="Arial, sans-serif" font-size="12" font-weight="600" text-anchor="start" fill="#475569">1393</text>
-<rect x="210" y="334" width="620" height="24" rx="5" fill="#f1f5f9"/>
-<rect x="210" y="334" width="0.9" height="24" rx="5" fill="#2563eb"/>
-<text x="220.9" y="352.0" font-family="Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start" fill="#2563eb">150</text>
-<text x="830.0" y="532.0" font-family="Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#94a3b8">Lower is better unless noted in label</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="364" viewBox="0 0 960 364">
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<text x="50" y="52" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="30" font-weight="800" fill="#172033" text-anchor="start">ZH-F07 后台用户列表查询下推</text>
+<text x="50" y="84" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="15" font-weight="400" fill="#64748b" text-anchor="start">数据库过滤、排序、分页和 DTO 投影替代 findAll 内存处理</text>
+<rect x="50" y="128" width="273" height="164" rx="14" fill="#ffffff" stroke="#dbe3ef"/>
+<rect x="50" y="128" width="6" height="164" rx="3" fill="#2563eb"/>
+<text x="78" y="170" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="16" font-weight="700" fill="#172033" text-anchor="start">P95 延迟</text>
+<text x="74" y="226" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="28" font-weight="800" fill="#2563eb" text-anchor="start">下降 53.59%</text>
+<text x="74" y="258" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">892ms -&gt; 414ms</text>
+<rect x="343" y="128" width="273" height="164" rx="14" fill="#ffffff" stroke="#dbe3ef"/>
+<rect x="343" y="128" width="6" height="164" rx="3" fill="#16a34a"/>
+<text x="371" y="170" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="16" font-weight="700" fill="#172033" text-anchor="start">SQL 扫描行数</text>
+<text x="367" y="226" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="28" font-weight="800" fill="#16a34a" text-anchor="start">下降 99.96%</text>
+<text x="367" y="258" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">98950 -&gt; 40</text>
+<rect x="636" y="128" width="273" height="164" rx="14" fill="#ffffff" stroke="#dbe3ef"/>
+<rect x="636" y="128" width="6" height="164" rx="3" fill="#7c3aed"/>
+<text x="664" y="170" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="16" font-weight="700" fill="#172033" text-anchor="start">峰值堆占用</text>
+<text x="660" y="226" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="28" font-weight="800" fill="#7c3aed" text-anchor="start">下降 88.96%</text>
+<text x="660" y="258" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">1.36GB -&gt; 150MB</text>
+<text x="910" y="340" font-family="Microsoft YaHei, Noto Sans CJK SC, PingFang SC, Arial, sans-serif" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="end">baseline 与 after 使用同一实验协议对比</text>
 </svg>

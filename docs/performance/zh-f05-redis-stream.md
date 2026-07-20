@@ -22,7 +22,7 @@ AI 流式回复每个 chunk 都走 `saveMessage + refreshSessionAfterMessageMuta
 | M 档 P95 延迟 | 139.6ms | 5.8ms | after/baseline = 0.0413 |
 | 最终消息等价 | - | 100% | PASS |
 
-![ZH-F05 Redis 流式写放大优化](assets/zh-f05-redis-stream.svg)
+![ZH-F05 Redis 流式写放大优化](assets/zh-f05-redis-stream.png)
 
 ## 4. MME 判定
 

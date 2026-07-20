@@ -24,7 +24,7 @@
 | 恢复 | - | 3/3 完整恢复 | PASS |
 | 合并 SHA-256 | - | 等于源文件 | PASS |
 
-![ZH-F02 分片上传有界并发](assets/zh-f02-upload.svg)
+![ZH-F02 分片上传有界并发](assets/zh-f02-upload.png)
 
 ## 4. MME 判定
 
