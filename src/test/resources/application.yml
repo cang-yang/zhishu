@@ -20,12 +20,32 @@ spring:
     bootstrap-servers: localhost:9092
     consumer:
       group-id: file-processing-group
+      document-processing-v2-group-id: document-processing-v2-group
+      document-processing-v2-dlt-group-id: document-processing-v2-dlt-group
       auto-offset-reset: earliest
       properties:
         spring.json.trusted.packages: "*"
     topic:
       file-processing: file-processing-topic1
       dlt: file-processing-dlt
+      document-processing-v2: document-processing-v2
+      document-processing-v2-dlt: document-processing-v2-dlt
+
+document-processing:
+  lease-seconds: 30
+  max-recoveries: 3
+  outbox:
+    batch-size: 20
+    initial-delay-ms: 3600000
+    scan-delay-ms: 3600000
+    stale-seconds: 60
+    send-timeout-seconds: 20
+    retry-delay-seconds: 1
+    max-attempts: 5
+  reaper:
+    batch-size: 50
+    initial-delay-ms: 3600000
+    scan-delay-ms: 3600000
 
 admin:
   bootstrap:

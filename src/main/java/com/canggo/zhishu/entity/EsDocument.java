@@ -11,6 +11,8 @@ import lombok.Data;
 public class EsDocument {
 
     private String id;             // 文档唯一标识
+    private Long fileUploadId;     // 文件上传记录ID；legacy 文档为空
+    private Integer processingVersion; // 处理版本；legacy 文档为空
     private String fileMd5;        // 文件指纹
     private Integer chunkId;       // 文本分块序号
     private String textContent;    // 文本内容

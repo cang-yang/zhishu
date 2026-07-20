@@ -1,6 +1,12 @@
 {
   "mappings": {
     "properties": {
+      "fileUploadId": {
+        "type": "long"
+      },
+      "processingVersion": {
+        "type": "integer"
+      },
       "fileMd5": {
         "type": "keyword"
       },

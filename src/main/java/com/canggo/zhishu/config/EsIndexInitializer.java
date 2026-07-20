@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.ExistsRequest;
+import co.elastic.clients.elasticsearch.indices.GetMappingResponse;
 import org.apache.http.ConnectionClosedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ import java.util.Locale;
 public class EsIndexInitializer implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(EsIndexInitializer.class);
+    private static final String INDEX_NAME = "knowledge_base";
 
     @Autowired
     private ElasticsearchClient esClient;
@@ -81,12 +83,13 @@ public class EsIndexInitializer implements CommandLineRunner {
      */
     private void initializeIndex() throws Exception {
         // 检查索引是否存在
-        BooleanResponse existsResponse = esClient.indices().exists(ExistsRequest.of(e -> e.index("knowledge_base")));
+        BooleanResponse existsResponse = esClient.indices().exists(ExistsRequest.of(e -> e.index(INDEX_NAME)));
         if (!existsResponse.value()) {
             createIndex();
         } else {
             logger.info("索引 'knowledge_base' 已存在");
         }
+        upgradeAndValidateReliabilityMapping();
     }
 
     /**
@@ -106,6 +109,29 @@ public class EsIndexInitializer implements CommandLineRunner {
         );
         esClient.indices().create(createIndexRequest);
         logger.info("索引 'knowledge_base' 已创建");
+    }
+
+    private void upgradeAndValidateReliabilityMapping() throws Exception {
+        esClient.indices().putMapping(request -> request
+                .index(INDEX_NAME)
+                .properties("fileUploadId", property -> property.long_(type -> type))
+                .properties("processingVersion", property -> property.integer(type -> type)));
+
+        GetMappingResponse response = esClient.indices().getMapping(request -> request.index(INDEX_NAME));
+        var indexMapping = response.result().get(INDEX_NAME);
+        if (indexMapping == null || indexMapping.mappings() == null) {
+            throw new IllegalStateException("Elasticsearch index mapping is missing for " + INDEX_NAME);
+        }
+        var properties = indexMapping.mappings().properties();
+        var fileUploadId = properties.get("fileUploadId");
+        var processingVersion = properties.get("processingVersion");
+        if (fileUploadId == null || !fileUploadId.isLong()) {
+            throw new IllegalStateException("Elasticsearch field fileUploadId must be type long");
+        }
+        if (processingVersion == null || !processingVersion.isInteger()) {
+            throw new IllegalStateException("Elasticsearch field processingVersion must be type integer");
+        }
+        logger.info("Elasticsearch reliability mapping verified: fileUploadId=long, processingVersion=integer");
     }
 
     private String buildDiagnosticMessage(Exception exception) {

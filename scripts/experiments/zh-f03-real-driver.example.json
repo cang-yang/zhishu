@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "ZH-F03-REAL-DRIVER/1",
+  "appBaseUrl": "http://127.0.0.1:8081",
+  "mysql": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "database": "zhishu",
+    "user": "root",
+    "password": "${ZH_F03_MYSQL_PASSWORD}"
+  },
+  "minio": {
+    "endpoint": "127.0.0.1:9000",
+    "accessKey": "${ZH_F03_MINIO_ACCESS_KEY}",
+    "secretKey": "${ZH_F03_MINIO_SECRET_KEY}",
+    "bucket": "zhishu",
+    "secure": false
+  },
+  "elasticsearch": {
+    "url": "http://127.0.0.1:9200",
+    "username": "elastic",
+    "password": "${ZH_F03_ELASTICSEARCH_PASSWORD}",
+    "verifyTls": false
+  },
+  "docker": {
+    "kafkaContainer": "zhishu-kafka",
+    "backendContainer": "zhishu-backend"
+  },
+  "processControl": {
+    "mode": "DOCKER"
+  },
+  "kafka": {
+    "consumerGroup": "document-processing-v2-group"
+  },
+  "auth": {
+    "ownerToken": "${ZH_F03_OWNER_TOKEN}",
+    "adminToken": "${ZH_F03_ADMIN_TOKEN}",
+    "otherToken": "${ZH_F03_OTHER_TOKEN}"
+  },
+  "legacyProbe": {
+    "query": "${ZH_F03_LEGACY_QUERY}",
+    "fileMd5": "${ZH_F03_LEGACY_FILE_MD5}",
+    "fileOwnerUserId": "${ZH_F03_LEGACY_OWNER_USER_ID}",
+    "queryOwnerUserId": "${ZH_F03_LEGACY_OWNER_USER_ID}",
+    "expectedVisible": true
+  },
+  "pollIntervalSeconds": 0.25
+}

@@ -111,8 +111,10 @@ public class UploadService {
         file.setUserId(userId);
         file.setIsRapidUpload(true);
         file.setStatus(0);
-        // 实际消耗为 0（因为是复制的，没有调用 API）
-        file.setActualEmbeddingTokens(1L);
+        file.setLatestProcessingVersion(0);
+        file.setActiveProcessingVersion(null);
+        file.setActualEmbeddingTokens(null);
+        file.setActualChunkCount(null);
         if (!fileUpload.get().getUserId().equals(userId)) {
             file.setFileName(fileName);
         }
@@ -148,43 +150,16 @@ public class UploadService {
 
 
 
-            //复制一份document_vectors表中的相关字段！
-            //先获取一个已存在的文段的用户Id
-            DocumentVector documentVector = documentVectorRepository.findFirstByFileMd5(fileMd5);
-
-            if (documentVector == null) {
-                return null;
-            }
-
-            String originalUser = documentVector.getUserId();
-
-            logger.info("[秒传功能2]找到用户，id：{}，文件md5：{}，文件名称：{}", originalUser, fileMd5, fileName);
-
-            //保存内容块到数据库
-            saveContentBlock(fileMd5, originalUser, fileUpload.get());
-
-            //保存向量内容到ES
-            saveVectorData(fileMd5, originalUser, fileUpload.get());
-
-
-            //此时完成秒传，修改状态
-            fileUpload.get().setStatus(1);
-
-            fileUploadRepository.save(fileUpload.get());
-            // 生成预签名 URL（有效期为 1 小时）
             String mergedPath = "merged/" + fileMd5;
+            minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(mergedPath)
+                    .build());
             logger.info("开始生成秒传预签名URL => fileMd5: {}, fileName: {}, path: {}", fileMd5, fileName, mergedPath);
-            String presignedUrl = minioClient.getPresignedObjectUrl(
-                    GetPresignedObjectUrlArgs.builder()
-                            .method(Method.GET)
-                            .bucket(bucketName)
-                            .object(mergedPath)
-                            .expiry(1, TimeUnit.HOURS) // 设置有效期为 1 小时
-                            .build()
-            );
+            String presignedUrl = createPresignedUrl(mergedPath);
 
-            int estimatedChunkCount = fileUpload.get().getEstimatedChunkCount();
-            long estimatedTokens = fileUpload.get().getEstimatedEmbeddingTokens();
+            int estimatedChunkCount = Optional.ofNullable(fileUpload.get().getEstimatedChunkCount()).orElse(0);
+            long estimatedTokens = Optional.ofNullable(fileUpload.get().getEstimatedEmbeddingTokens()).orElse(0L);
             logger.info("秒传预签名URL已生成 => fileMd5: {}, fileName: {}, URL: {}", fileMd5, fileName, presignedUrl);
             return new InstantTransmissionDeterminationAttributes(
                     estimatedTokens,//秒传无消耗（这里是预估消耗，应该正常显示。实际消耗为0）
@@ -737,19 +712,31 @@ public class UploadService {
      * @return 合成文件的访问 URL
      */
     public String mergeChunks(String fileMd5, String fileName, String userId) {
-        String fileType = getFileType(fileName);
-        logger.info("开始合并文件分片 => fileMd5: {}, fileName: {}, fileType: {}, userId: {}", fileMd5, fileName, fileType, userId);
-        try {
-            // 查询所有分片信息
-            logger.debug("查询分片信息 => fileMd5: {}, fileName: {}", fileMd5, fileName);
-            List<ChunkInfo> chunks = chunkInfoRepository.findByFileMd5OrderByChunkIndexAsc(fileMd5);
-            logger.info("查询到分片信息 => fileMd5: {}, fileName: {}, fileType: {}, 分片数量: {}", fileMd5, fileName, fileType, chunks.size());
+        String objectKey = composeOrReuseMergedObject(fileMd5, fileName, userId);
+        return createPresignedUrl(objectKey);
+    }
 
-            // 检查分片数量是否与预期一致
+    /**
+     * 合并分片或复用已经成功合成的对象。该步骤不修改 MySQL 文件状态，也不清理分片。
+     */
+    public String composeOrReuseMergedObject(String fileMd5, String fileName, String userId) {
+        String mergedPath = "merged/" + fileMd5;
+        try {
+            try {
+                minioClient.statObject(StatObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(mergedPath)
+                        .build());
+                logger.info("复用已存在的合并对象 => fileMd5: {}, objectKey: {}", fileMd5, mergedPath);
+                return mergedPath;
+            } catch (Exception notFoundOrUnavailable) {
+                logger.debug("合并对象尚不可复用，继续检查并合成分片 => fileMd5: {}, reason: {}",
+                        fileMd5, notFoundOrUnavailable.getMessage());
+            }
+
+            List<ChunkInfo> chunks = chunkInfoRepository.findByFileMd5OrderByChunkIndexAsc(fileMd5);
             int expectedChunks = getTotalChunks(fileMd5, userId);
             if (chunks.size() != expectedChunks) {
-                logger.error("分片数量不匹配 => fileMd5: {}, fileName: {}, fileType: {}, 期望: {}, 实际: {}",
-                        fileMd5, fileName, fileType, expectedChunks, chunks.size());
                 throw new RuntimeException(String.format(
                         "分片数量不匹配，期望: %d, 实际: %d", expectedChunks, chunks.size()));
             }
@@ -757,132 +744,89 @@ public class UploadService {
             List<String> partPaths = chunks.stream()
                     .map(ChunkInfo::getStoragePath)
                     .collect(Collectors.toList());
-            logger.debug("分片路径列表 => fileMd5: {}, fileName: {}, 路径数量: {}", fileMd5, fileName, partPaths.size());
-
-            // 检查每个分片是否存在
-            logger.info("开始检查每个分片是否存在 => fileMd5: {}, fileName: {}, fileType: {}", fileMd5, fileName, fileType);
             for (int i = 0; i < partPaths.size(); i++) {
                 String path = partPaths.get(i);
                 try {
-                    StatObjectResponse stat = minioClient.statObject(
-                            StatObjectArgs.builder()
-                                    .bucket(bucketName)
-                                    .object(path)
-                                    .build()
-                    );
-                    logger.debug("分片存在 => fileName: {}, index: {}, path: {}, size: {}", fileName, i, path, stat.size());
+                    minioClient.statObject(StatObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(path)
+                            .build());
                 } catch (Exception e) {
-                    logger.error("分片不存在或无法访问 => fileName: {}, index: {}, path: {}, 错误: {}",
-                            fileName, i, path, e.getMessage(), e);
                     throw new RuntimeException("分片 " + i + " 不存在或无法访问: " + e.getMessage(), e);
                 }
             }
-            logger.info("分片检查完成，所有分片都存在 => fileMd5: {}, fileName: {}, fileType: {}", fileMd5, fileName, fileType);
 
-            // 使用 MD5 作为 MinIO 对象路径，确保同名不同内容的文件不会互相覆盖
-            String mergedPath = "merged/" + fileMd5;
-            logger.info("开始合并分片 => fileMd5: {}, fileName: {}, fileType: {}, 合并后路径: {}", fileMd5, fileName, fileType, mergedPath);
-
-            try {
-                // 合并分片
-                List<ComposeSource> sources = partPaths.stream()
-                        .map(path -> ComposeSource.builder().bucket(bucketName).object(path).build())
-                        .collect(Collectors.toList());
-
-                logger.debug("构建合并请求 => fileMd5: {}, fileName: {}, targetPath: {}, sourcePaths: {}",
-                        fileMd5, fileName, mergedPath, partPaths);
-
-                minioClient.composeObject(
-                        ComposeObjectArgs.builder()
-                                .bucket(bucketName)
-                                .object(mergedPath)
-                                .sources(sources)
-                                .build()
-                );
-                logger.info("分片合并成功 => fileMd5: {}, fileName: {}, fileType: {}, mergedPath: {}", fileMd5, fileName, fileType, mergedPath);
-
-                // 检查合并后的文件
-                StatObjectResponse stat = minioClient.statObject(
-                        StatObjectArgs.builder()
-                                .bucket(bucketName)
-                                .object(mergedPath)
-                                .build()
-                );
-
-                logger.info("合并文件信息 => fileMd5: {}, fileName: {}, fileType: {}, path: {}, size: {}", fileMd5, fileName, fileType, mergedPath, stat.size());
-
-                // 清理分片文件
-                logger.info("开始清理分片文件 => fileMd5: {}, fileName: {}, 分片数量: {}", fileMd5, fileName, partPaths.size());
-                for (String path : partPaths) {
-                    try {
-                        minioClient.removeObject(
-                                RemoveObjectArgs.builder()
-                                        .bucket(bucketName)
-                                        .object(path)
-                                        .build()
-                        );
-                        logger.debug("分片文件已删除 => fileName: {}, path: {}", fileName, path);
-                    } catch (Exception e) {
-                        // 记录错误但不中断流程
-                        logger.warn("删除分片文件失败，将继续处理 => fileName: {}, path: {}, 错误: {}", fileName, path, e.getMessage());
-                    }
-                }
-                logger.info("分片文件清理完成 => fileMd5: {}, fileName: {}, fileType: {}", fileMd5, fileName, fileType);
-
-                // 删除 Redis 中的分片状态记录
-                logger.info("删除Redis中的分片状态记录 => fileMd5: {}, fileName: {}, userId: {}", fileMd5, fileName, userId);
-                deleteFileMark(fileMd5, userId);
-                logger.info("分片状态记录已删除 => fileMd5: {}, fileName: {}, userId: {}", fileMd5, fileName, userId);
-
-                //删除mysql中的分片状态记录
-                logger.info("删除mysql中的分片状态记录 => fileMd5: {}, fileName: {}, userId: {}", fileMd5, fileName, userId);
-                chunkInfoRepository.deleteByFileMd5(fileMd5);
-                logger.info("分片状态记录已删除 => fileMd5: {}, fileName: {}, userId: {}", fileMd5, fileName, userId);
-
-                // 更新文件状态
-                logger.info("更新文件状态为已完成 => fileMd5: {}, fileName: {}, fileType: {}, userId: {}", fileMd5, fileName, fileType, userId);
-                FileUpload fileUpload = fileUploadRepository.findFirstByFileMd5AndUserIdOrderByCreatedAtDesc(fileMd5, userId)
-                        .orElseThrow(() -> {
-                            logger.error("更新文件状态失败，文件记录不存在 => fileMd5: {}, fileName: {}", fileMd5, fileName);
-                            return new RuntimeException("文件记录不存在: " + fileMd5);
-                        });
-                fileUpload.setStatus(1); // 已完成
-                fileUpload.setMergedAt(LocalDateTime.now());
-                fileUploadRepository.save(fileUpload);
-                logger.info("文件状态已更新为已完成 => fileMd5: {}, fileName: {}, fileType: {}", fileMd5, fileName, fileType);
-
-                // 生成预签名 URL（有效期为 1 小时）
-                logger.info("开始生成预签名URL => fileMd5: {}, fileName: {}, path: {}", fileMd5, fileName, mergedPath);
-                String presignedUrl = minioClient.getPresignedObjectUrl(
-                        GetPresignedObjectUrlArgs.builder()
-                                .method(Method.GET)
-                                .bucket(bucketName)
-                                .object(mergedPath)
-                                .expiry(1, TimeUnit.HOURS) // 设置有效期为 1 小时
-                                .build()
-                );
-                logger.info("预签名URL已生成 => fileMd5: {}, fileName: {}, fileType: {}, URL: {}", fileMd5, fileName, fileType, presignedUrl);
-
-                return presignedUrl;
-            } catch (Exception e) {
-                logger.error("合并文件失败 => fileMd5: {}, fileName: {}, fileType: {}, 错误类型: {}, 错误信息: {}",
-                        fileMd5, fileName, fileType, e.getClass().getName(), e.getMessage(), e);
-                throw new RuntimeException("合并文件失败: " + e.getMessage(), e);
-            }
+            List<ComposeSource> sources = partPaths.stream()
+                    .map(path -> ComposeSource.builder().bucket(bucketName).object(path).build())
+                    .collect(Collectors.toList());
+            minioClient.composeObject(ComposeObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(mergedPath)
+                    .sources(sources)
+                    .build());
+            minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(mergedPath)
+                    .build());
+            logger.info("分片合并成功，等待 MySQL finalize 后清理 => fileMd5: {}, objectKey: {}",
+                    fileMd5, mergedPath);
+            return mergedPath;
         } catch (Exception e) {
-            logger.error("文件合并过程中发生错误 => fileMd5: {}, fileName: {}, fileType: {}, 错误类型: {}, 错误信息: {}",
-                    fileMd5, fileName, fileType, e.getClass().getName(), e.getMessage(), e);
             throw new RuntimeException("文件合并失败: " + e.getMessage(), e);
         }
     }
 
-    public GetObjectResponse getMergedFileStream(String fileMd5) throws Exception {
-        return minioClient.getObject(
-                GetObjectArgs.builder()
+    /**
+     * finalize 提交后的幂等清理。任何分片删除失败时保留 Redis/DB 元数据，供下一次重试继续清理。
+     */
+    public void cleanupUploadedChunks(String fileMd5, String userId) {
+        List<ChunkInfo> chunks = chunkInfoRepository.findByFileMd5OrderByChunkIndexAsc(fileMd5);
+        RuntimeException removalFailure = null;
+        for (ChunkInfo chunk : chunks) {
+            try {
+                minioClient.removeObject(RemoveObjectArgs.builder()
                         .bucket(bucketName)
-                        .object("merged/" + fileMd5)
-                        .build()
-        );
+                        .object(chunk.getStoragePath())
+                        .build());
+            } catch (Exception e) {
+                logger.warn("提交后清理分片失败，保留元数据等待重试 => fileMd5: {}, path: {}",
+                        fileMd5, chunk.getStoragePath(), e);
+                if (removalFailure == null) {
+                    removalFailure = new RuntimeException("清理分片失败: " + chunk.getStoragePath(), e);
+                } else {
+                    removalFailure.addSuppressed(e);
+                }
+            }
+        }
+        if (removalFailure != null) {
+            throw removalFailure;
+        }
+        deleteFileMark(fileMd5, userId);
+        chunkInfoRepository.deleteByFileMd5(fileMd5);
+    }
+
+    public String createPresignedUrl(String objectKey) {
+        try {
+            return minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
+                    .method(Method.GET)
+                    .bucket(bucketName)
+                    .object(objectKey)
+                    .expiry(1, TimeUnit.HOURS)
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException("生成预签名 URL 失败: " + objectKey, e);
+        }
+    }
+
+    public GetObjectResponse getMergedFileStreamByObjectKey(String objectKey) throws Exception {
+        return minioClient.getObject(GetObjectArgs.builder()
+                .bucket(bucketName)
+                .object(objectKey)
+                .build());
+    }
+
+    public GetObjectResponse getMergedFileStream(String fileMd5) throws Exception {
+        return getMergedFileStreamByObjectKey("merged/" + fileMd5);
     }
 
     /**

@@ -1,16 +1,42 @@
 package com.canggo.zhishu.repository;
 
 import com.canggo.zhishu.model.FileUpload;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface FileUploadRepository extends JpaRepository<FileUpload, Long> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT f FROM FileUpload f WHERE f.id = :id")
+    Optional<FileUpload> findByIdForUpdate(@Param("id") Long id);
+
+    @Transactional
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            UPDATE file_upload
+               SET active_processing_version = :processingVersion,
+                   actual_embedding_tokens = :actualEmbeddingTokens,
+                   actual_chunk_count = :actualChunkCount
+             WHERE id = :fileUploadId
+               AND latest_processing_version = :processingVersion
+            """, nativeQuery = true)
+    int activateVersionIfLatest(
+            @Param("fileUploadId") Long fileUploadId,
+            @Param("processingVersion") int processingVersion,
+            @Param("actualEmbeddingTokens") long actualEmbeddingTokens,
+            @Param("actualChunkCount") int actualChunkCount);
+
+    List<FileUpload> findByIsPublicTrue();
+
     Optional<FileUpload> findFirstByFileMd5OrderByCreatedAtDesc(String fileMd5);
 
     Optional<FileUpload> findFirstByFileMd5(String fileMd5);

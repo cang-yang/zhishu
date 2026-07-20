@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface DocumentVectorRepository extends JpaRepository<DocumentVector, Long> {
     List<DocumentVector> findByFileMd5(String fileMd5); // 查询某文件的所有分块
@@ -14,6 +15,17 @@ public interface DocumentVectorRepository extends JpaRepository<DocumentVector, 
     long countByFileMd5(String fileMd5);
 
     long countByFileMd5AndPageNumberIsNotNull(String fileMd5);
+
+    List<DocumentVector> findByFileUploadIdAndProcessingVersionOrderByChunkIdAsc(
+            Long fileUploadId,
+            Integer processingVersion);
+
+    Optional<DocumentVector> findByFileUploadIdAndProcessingVersionAndChunkId(
+            Long fileUploadId,
+            Integer processingVersion,
+            Integer chunkId);
+
+    long countByFileUploadIdAndProcessingVersion(Long fileUploadId, Integer processingVersion);
 
     /**
      * 查询第一个filemd5的条目

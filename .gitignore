@@ -84,4 +84,14 @@ cleanup_v3_report.md
 cleanup.py
 cleanup_report.md
 *.py
+!scripts/experiments/zh_f03_light_common.py
+!scripts/experiments/zh_f03_light_stat.py
+!scripts/experiments/zh_f03_light_verify.py
+!scripts/experiments/zh_f03_real_fault_driver.py
+!scripts/experiments/zh_f03_native_process_control.py
+!scripts/experiments/zh_f03_auth_prepare.py
+!scripts/experiments/zh_f03_light_freeze.py
+!scripts/experiments/tests/test_zh_f03_light_tools.py
+scripts/experiments/__pycache__/
+scripts/experiments/tests/__pycache__/
 deployment_files_dump.txt

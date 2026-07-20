@@ -1,8 +1,9 @@
 package com.canggo.zhishu.controller;
 
-import com.canggo.zhishu.config.KafkaConfig;
+import com.canggo.zhishu.model.FileUpload;
 import com.canggo.zhishu.model.OrganizationTag;
 import com.canggo.zhishu.repository.FileUploadRepository;
+import com.canggo.zhishu.service.DocumentProcessingRequestService;
 import com.canggo.zhishu.service.FileTypeValidationService;
 import com.canggo.zhishu.service.ParseService;
 import com.canggo.zhishu.service.UploadService;
@@ -11,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -29,12 +29,6 @@ class UploadControllerTest {
     private UploadService uploadService;
 
     @Mock
-    private KafkaTemplate<String, Object> kafkaTemplate;
-
-    @Mock
-    private KafkaConfig kafkaConfig;
-
-    @Mock
     private UserService userService;
 
     @Mock
@@ -46,13 +40,15 @@ class UploadControllerTest {
     @Mock
     private ParseService parseService;
 
+    @Mock
+    private DocumentProcessingRequestService documentProcessingRequestService;
+
     private UploadController uploadController;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        uploadController = new UploadController(uploadService, kafkaTemplate);
-        ReflectionTestUtils.setField(uploadController, "kafkaConfig", kafkaConfig);
+        uploadController = new UploadController(uploadService, documentProcessingRequestService);
         ReflectionTestUtils.setField(uploadController, "userService", userService);
         ReflectionTestUtils.setField(uploadController, "fileUploadRepository", fileUploadRepository);
         ReflectionTestUtils.setField(uploadController, "fileTypeValidationService", fileTypeValidationService);
@@ -142,5 +138,68 @@ class UploadControllerTest {
 
         assertEquals(413, response.getStatusCode().value());
         verify(uploadService, never()).uploadChunk(anyString(), anyInt(), anyLong(), anyString(), any(), anyString(), anyBoolean(), anyString());
+    }
+
+    @Test
+    void mergeReturnsCommittedTaskEvenWhenPostCommitCleanupFails() throws Exception {
+        FileUpload file = uploadingFile(false);
+        when(fileUploadRepository.findFirstByFileMd5AndUserIdOrderByCreatedAtDesc("md5", "1"))
+                .thenReturn(java.util.Optional.of(file));
+        when(uploadService.composeOrReuseMergedObject("md5", "test.pdf", "1"))
+                .thenReturn("merged/md5");
+        when(uploadService.getMergedFileStreamByObjectKey("merged/md5"))
+                .thenThrow(new RuntimeException("estimate unavailable"));
+        when(documentProcessingRequestService.finalizeUpload(file.getId(), "merged/md5", null, null))
+                .thenReturn(new DocumentProcessingRequestService.ProcessingRequestResult(
+                        "task-1", file.getId(), 1, com.canggo.zhishu.model.ProcessingTaskStatus.PENDING,
+                        "merged/md5"));
+        when(uploadService.createPresignedUrl("merged/md5")).thenReturn("https://minio/merged/md5");
+        doThrow(new RuntimeException("cleanup failed"))
+                .when(uploadService).cleanupUploadedChunks("md5", "1");
+
+        var response = uploadController.mergeFile(new UploadController.MergeRequest("md5", "test.pdf"), "1");
+
+        assertEquals(200, response.getStatusCode().value());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) response.getBody().get("data");
+        assertEquals("task-1", data.get("taskId"));
+        assertEquals("PENDING", data.get("status"));
+        assertEquals("https://minio/merged/md5", data.get("object_url"));
+        var order = inOrder(documentProcessingRequestService, uploadService);
+        order.verify(documentProcessingRequestService).finalizeUpload(file.getId(), "merged/md5", null, null);
+        order.verify(uploadService).cleanupUploadedChunks("md5", "1");
+    }
+
+    @Test
+    void rapidUploadCreatesNormalTaskWithoutCallingLegacyCopyStage() throws Exception {
+        FileUpload file = uploadingFile(true);
+        file.setEstimatedEmbeddingTokens(50L);
+        file.setEstimatedChunkCount(3);
+        when(fileUploadRepository.findFirstByFileMd5AndUserIdOrderByCreatedAtDesc("md5", "1"))
+                .thenReturn(java.util.Optional.of(file));
+        when(uploadService.composeOrReuseMergedObject("md5", "test.pdf", "1"))
+                .thenReturn("merged/md5");
+        when(documentProcessingRequestService.finalizeUpload(file.getId(), "merged/md5", 50L, 3))
+                .thenReturn(new DocumentProcessingRequestService.ProcessingRequestResult(
+                        "task-rapid", file.getId(), 1, com.canggo.zhishu.model.ProcessingTaskStatus.PENDING,
+                        "merged/md5"));
+        when(uploadService.createPresignedUrl("merged/md5")).thenReturn("https://minio/merged/md5");
+
+        var response = uploadController.mergeFile(new UploadController.MergeRequest("md5", "test.pdf"), "1");
+
+        assertEquals(200, response.getStatusCode().value());
+        verify(uploadService, never()).secondStageInstantUploadDetermination(anyString(), anyString(), anyString());
+        verify(documentProcessingRequestService).finalizeUpload(file.getId(), "merged/md5", 50L, 3);
+    }
+
+    private FileUpload uploadingFile(boolean rapid) {
+        FileUpload file = new FileUpload();
+        file.setId(7L);
+        file.setFileMd5("md5");
+        file.setFileName("test.pdf");
+        file.setUserId("1");
+        file.setStatus(0);
+        file.setIsRapidUpload(rapid);
+        return file;
     }
 }

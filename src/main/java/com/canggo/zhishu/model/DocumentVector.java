@@ -11,7 +11,11 @@ import java.sql.Blob;
  */
 @Data
 @Entity
-@Table(name = "document_vectors")
+@Table(
+        name = "document_vectors",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_document_vector_business_key",
+                columnNames = {"file_upload_id", "processing_version", "chunk_id"}))
 public class DocumentVector {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,6 +26,15 @@ public class DocumentVector {
 
     @Column(nullable = false)
     private Integer chunkId;
+
+    @Column(name = "file_upload_id")
+    private Long fileUploadId;
+
+    @Column(name = "processing_version")
+    private Integer processingVersion;
+
+    @Column(name = "content_hash", length = 64)
+    private String contentHash;
 
     @Lob
     private String textContent;

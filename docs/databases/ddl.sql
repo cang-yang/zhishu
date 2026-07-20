@@ -36,6 +36,8 @@ CREATE TABLE file_upload (
                              estimated_chunk_count INT DEFAULT NULL COMMENT '预估切片数',
                              actual_embedding_tokens BIGINT DEFAULT NULL COMMENT '实际 embedding token 数',
                              actual_chunk_count INT DEFAULT NULL COMMENT '实际切片数',
+                             latest_processing_version INT NOT NULL DEFAULT 0 COMMENT '最新创建的处理版本，0为legacy',
+                             active_processing_version INT DEFAULT NULL COMMENT '当前可检索版本；NULL表示无可检索版本，0表示legacy',
                              created_at   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                              merged_at    TIMESTAMP        NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '合并时间',
                              PRIMARY KEY (id),
@@ -51,17 +53,57 @@ CREATE TABLE chunk_info (
                             storage_path VARCHAR(255) NOT NULL COMMENT '分块在存储系统中的路径'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文件分块信息表';
 
+CREATE TABLE document_processing_task (
+                                          id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                                          task_id VARCHAR(36) NOT NULL,
+                                          file_upload_id BIGINT NOT NULL,
+                                          processing_version INT NOT NULL,
+                                          status VARCHAR(24) NOT NULL,
+                                          current_stage VARCHAR(24) NOT NULL,
+                                          retry_count INT NOT NULL DEFAULT 0,
+                                          error_message VARCHAR(2000),
+                                          source_object_key VARCHAR(512) NOT NULL,
+                                          execution_token VARCHAR(36),
+                                          lease_expire_at DATETIME(6),
+                                          created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                                          updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                                          completed_at DATETIME(6),
+                                          UNIQUE KEY uk_processing_task_id (task_id),
+                                          UNIQUE KEY uk_processing_file_version (file_upload_id, processing_version),
+                                          INDEX idx_processing_status_lease (status, lease_expire_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文档异步处理任务';
+
+CREATE TABLE outbox_event (
+                              id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                              event_id VARCHAR(36) NOT NULL,
+                              task_id VARCHAR(36) NOT NULL,
+                              payload TEXT NOT NULL,
+                              status VARCHAR(16) NOT NULL,
+                              retry_count INT NOT NULL DEFAULT 0,
+                              next_retry_at DATETIME(6),
+                              last_error VARCHAR(2000),
+                              created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                              updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                              UNIQUE KEY uk_outbox_event_id (event_id),
+                              UNIQUE KEY uk_outbox_task_id (task_id),
+                              INDEX idx_outbox_status_retry_updated (status, next_retry_at, updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Kafka事务发件箱';
+
 CREATE TABLE document_vectors (
                                   vector_id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '向量记录唯一标识',
                                   file_md5 VARCHAR(32) NOT NULL COMMENT '关联的文件MD5值',
                                   chunk_id INT NOT NULL COMMENT '文本分块序号',
+                                  file_upload_id BIGINT COMMENT '文件上传记录ID；legacy为空',
+                                  processing_version INT COMMENT '处理版本；legacy为空',
+                                  content_hash CHAR(64) COMMENT 'UTF-8内容SHA-256',
                                   text_content TEXT COMMENT '文本内容',
                                   page_number INT COMMENT 'PDF页码，用于引用定位',
                                   anchor_text VARCHAR(255) COMMENT '页内定位锚点文本',
                                   model_version VARCHAR(32) COMMENT '向量模型版本',
                                   user_id VARCHAR(64) NOT NULL COMMENT '上传用户ID',
                                   org_tag VARCHAR(50) COMMENT '文件所属组织标签',
-                                  is_public BOOLEAN NOT NULL DEFAULT FALSE COMMENT '文件是否公开'
+                                  is_public BOOLEAN NOT NULL DEFAULT FALSE COMMENT '文件是否公开',
+                                  UNIQUE KEY uk_document_vector_business_key (file_upload_id, processing_version, chunk_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文档向量存储表';
 
 CREATE TABLE rate_limit_configs (

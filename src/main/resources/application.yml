@@ -36,11 +36,13 @@ spring:
       acks: all
       retries: 3
       enable-idempotence: true
-      transactional-id-prefix: file-upload-tx-
+      transactional-id-prefix: ${SPRING_KAFKA_TRANSACTION_ID_PREFIX:file-upload-tx-${HOSTNAME:local}-${SERVER_PORT:8081}-}
       properties:
         client.dns.lookup: use_all_dns_ips
     consumer:
       group-id: file-processing-group
+      document-processing-v2-group-id: ${SPRING_KAFKA_DOCUMENT_PROCESSING_V2_GROUP_ID:document-processing-v2-group}
+      document-processing-v2-dlt-group-id: ${SPRING_KAFKA_DOCUMENT_PROCESSING_V2_DLT_GROUP_ID:document-processing-v2-dlt-group}
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
@@ -50,6 +52,8 @@ spring:
     topic:
       file-processing: file-processing-topic1
       dlt: file-processing-dlt
+      document-processing-v2: ${SPRING_KAFKA_DOCUMENT_PROCESSING_V2_TOPIC:document-processing-v2}
+      document-processing-v2-dlt: ${SPRING_KAFKA_DOCUMENT_PROCESSING_V2_DLT_TOPIC:document-processing-v2-dlt}
       partitions: ${SPRING_KAFKA_TOPIC_PARTITIONS:1}
       replication-factor: ${SPRING_KAFKA_TOPIC_REPLICATION_FACTOR:1}
   webflux:
@@ -57,6 +61,22 @@ spring:
       max-in-memory-size: 16MB
   codec:
     max-in-memory-size: 16MB
+
+document-processing:
+  lease-seconds: ${DOCUMENT_PROCESSING_LEASE_SECONDS:1800}
+  max-recoveries: ${DOCUMENT_PROCESSING_MAX_RECOVERIES:3}
+  outbox:
+    batch-size: ${DOCUMENT_PROCESSING_OUTBOX_BATCH_SIZE:20}
+    initial-delay-ms: ${DOCUMENT_PROCESSING_OUTBOX_INITIAL_DELAY_MS:1000}
+    scan-delay-ms: ${DOCUMENT_PROCESSING_OUTBOX_SCAN_DELAY_MS:1000}
+    stale-seconds: ${DOCUMENT_PROCESSING_OUTBOX_STALE_SECONDS:60}
+    send-timeout-seconds: ${DOCUMENT_PROCESSING_OUTBOX_SEND_TIMEOUT_SECONDS:20}
+    retry-delay-seconds: ${DOCUMENT_PROCESSING_OUTBOX_RETRY_DELAY_SECONDS:3}
+    max-attempts: ${DOCUMENT_PROCESSING_OUTBOX_MAX_ATTEMPTS:5}
+  reaper:
+    batch-size: ${DOCUMENT_PROCESSING_REAPER_BATCH_SIZE:50}
+    initial-delay-ms: ${DOCUMENT_PROCESSING_REAPER_INITIAL_DELAY_MS:60000}
+    scan-delay-ms: ${DOCUMENT_PROCESSING_REAPER_SCAN_DELAY_MS:60000}
 
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}

@@ -85,6 +85,12 @@ public class FileUpload {
     @Column(name = "actual_chunk_count")
     private Integer actualChunkCount;
 
+    @Column(name = "latest_processing_version", nullable = false)
+    private int latestProcessingVersion = 0;
+
+    @Column(name = "active_processing_version")
+    private Integer activeProcessingVersion;
+
     /**
      * 文件上传的创建时间
      * 自动记录文件上传开始的时间

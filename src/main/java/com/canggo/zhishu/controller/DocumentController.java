@@ -6,6 +6,7 @@ import com.canggo.zhishu.model.OrganizationTag;
 import com.canggo.zhishu.repository.FileUploadRepository;
 import com.canggo.zhishu.repository.OrganizationTagRepository;
 import com.canggo.zhishu.service.ChatHandler;
+import com.canggo.zhishu.service.DocumentProcessingRequestService;
 import com.canggo.zhishu.service.DocumentService;
 import com.canggo.zhishu.utils.LogUtils;
 import com.canggo.zhishu.utils.JwtUtils;
@@ -48,6 +49,9 @@ public class DocumentController {
 
     @Autowired
     private ChatHandler chatHandler;
+
+    @Autowired
+    private DocumentProcessingRequestService documentProcessingRequestService;
 
     /**
      * 删除文档及其相关数据
@@ -114,7 +118,11 @@ public class DocumentController {
         try {
             LogUtils.logBusiness("REINDEX_DOCUMENT", userId, "接收到重建文档索引请求: fileMd5=%s, role=%s", fileMd5, role);
 
-            Optional<FileUpload> fileOpt = fileUploadRepository.findFirstByFileMd5OrderByCreatedAtDesc(fileMd5);
+            Optional<FileUpload> fileOpt = fileUploadRepository
+                    .findFirstByFileMd5AndUserIdOrderByCreatedAtDesc(fileMd5, userId);
+            if (fileOpt.isEmpty()) {
+                fileOpt = fileUploadRepository.findFirstByFileMd5OrderByCreatedAtDesc(fileMd5);
+            }
             if (fileOpt.isEmpty()) {
                 monitor.end("重建失败：文档不存在");
                 Map<String, Object> response = new HashMap<>();
@@ -132,21 +140,28 @@ public class DocumentController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
             }
 
-            var result = documentService.reindexDocument(fileMd5, userId);
-            monitor.end("文档索引重建成功");
+            var result = documentProcessingRequestService.requestReindex(file.getId());
+            monitor.end("文档异步重建任务已创建");
 
             Map<String, Object> data = new HashMap<>();
             data.put("fileMd5", fileMd5);
             data.put("fileName", file.getFileName());
-            data.put("actualEmbeddingTokens", result.actualEmbeddingTokens());
-            data.put("actualChunkCount", result.actualChunkCount());
-            data.put("modelVersion", result.modelVersion());
+            data.put("taskId", result.taskId());
+            data.put("fileUploadId", result.fileUploadId());
+            data.put("processingVersion", result.processingVersion());
+            data.put("status", result.status().name());
 
             Map<String, Object> response = new HashMap<>();
-            response.put("code", 200);
-            response.put("message", "文档索引重建成功");
+            response.put("code", HttpStatus.ACCEPTED.value());
+            response.put("message", "文档索引重建任务已创建");
             response.put("data", data);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+        } catch (CustomException e) {
+            monitor.end("重建失败: " + e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("code", e.getStatus().value());
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(e.getStatus()).body(response);
         } catch (Exception e) {
             LogUtils.logBusinessError("REINDEX_DOCUMENT", userId, "重建文档索引失败: fileMd5=%s", e, fileMd5);
             monitor.end("重建失败: " + e.getMessage());

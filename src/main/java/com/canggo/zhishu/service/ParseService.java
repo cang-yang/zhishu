@@ -19,6 +19,8 @@ import org.xml.sax.SAXException;
 import java.io.*;
 import java.text.Normalizer;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +39,9 @@ public class ParseService {
 
     @Autowired
     private DocumentVectorRepository documentVectorRepository;
+
+    @Autowired
+    private VersionedChunkWriter versionedChunkWriter;
 
     @Autowired
     private UsageQuotaService usageQuotaService;
@@ -71,6 +76,29 @@ public class ParseService {
      */
     public void parseAndSave(String fileMd5, InputStream fileStream,
             String userId, String orgTag, boolean isPublic) throws IOException, TikaException {
+        parseAndSaveInternal(null, null, fileMd5, fileStream, userId, orgTag, isPublic);
+    }
+
+    public void parseAndSave(
+            Long fileUploadId,
+            int processingVersion,
+            String fileMd5,
+            InputStream fileStream,
+            String userId,
+            String orgTag,
+            boolean isPublic) throws IOException, TikaException {
+        parseAndSaveInternal(
+                fileUploadId, processingVersion, fileMd5, fileStream, userId, orgTag, isPublic);
+    }
+
+    private void parseAndSaveInternal(
+            Long fileUploadId,
+            Integer processingVersion,
+            String fileMd5,
+            InputStream fileStream,
+            String userId,
+            String orgTag,
+            boolean isPublic) throws IOException, TikaException {
         logger.info("开始流式解析文件，fileMd5: {}, userId: {}, orgTag: {}, isPublic: {}",
                 fileMd5, userId, orgTag, isPublic);
         
@@ -78,13 +106,15 @@ public class ParseService {
 
         try (BufferedInputStream bufferedStream = new BufferedInputStream(fileStream, bufferSize)) {
             if (isPdfDocument(bufferedStream)) {
-                parsePdfAndSave(fileMd5, bufferedStream, userId, orgTag, isPublic);
+                parsePdfAndSave(
+                        fileUploadId, processingVersion, fileMd5, bufferedStream, userId, orgTag, isPublic);
                 logger.info("PDF 文件页级解析和入库完成，fileMd5: {}", fileMd5);
                 return;
             }
 
             // 创建一个流式处理器，它会在内部处理父块的切分和子块的保存
-            StreamingContentHandler handler = new StreamingContentHandler(fileMd5, userId, orgTag, isPublic);
+            StreamingContentHandler handler = new StreamingContentHandler(
+                    fileUploadId, processingVersion, fileMd5, userId, orgTag, isPublic);
             Metadata metadata = new Metadata();
             ParseContext context = new ParseContext();
             AutoDetectParser parser = new AutoDetectParser();
@@ -173,14 +203,24 @@ public class ParseService {
      */
     private class StreamingContentHandler extends BodyContentHandler {
         private final StringBuilder buffer = new StringBuilder();
+        private final Long fileUploadId;
+        private final Integer processingVersion;
         private final String fileMd5;
         private final String userId;
         private final String orgTag;
         private final boolean isPublic;
         private int savedChunkCount = 0;
 
-        public StreamingContentHandler(String fileMd5, String userId, String orgTag, boolean isPublic) {
+        public StreamingContentHandler(
+                Long fileUploadId,
+                Integer processingVersion,
+                String fileMd5,
+                String userId,
+                String orgTag,
+                boolean isPublic) {
             super(-1); // 禁用Tika的内部写入限制，我们自己管理缓冲区
+            this.fileUploadId = fileUploadId;
+            this.processingVersion = processingVersion;
             this.fileMd5 = fileMd5;
             this.userId = userId;
             this.orgTag = orgTag;
@@ -212,7 +252,8 @@ public class ParseService {
 
             // 2. 将子切片批量保存到数据库
             this.savedChunkCount = ParseService.this.saveChildChunks(
-                    fileMd5, childChunks, userId, orgTag, isPublic, this.savedChunkCount, null
+                    fileUploadId, processingVersion, fileMd5, childChunks,
+                    userId, orgTag, isPublic, this.savedChunkCount, null
             );
 
             // 3. 清空缓冲区，为下一个父块做准备
@@ -267,27 +308,53 @@ public class ParseService {
      * @param startingChunkId 当前批次的起始分片ID
      * @return 保存后总的分片数量
      */
-    private int saveChildChunks(String fileMd5, List<String> chunks,
+    private int saveChildChunks(
+            Long fileUploadId,
+            Integer processingVersion,
+            String fileMd5,
+            List<String> chunks,
             String userId, String orgTag, boolean isPublic, int startingChunkId, Integer pageNumber) {
         int currentChunkId = startingChunkId;
         for (String chunk : chunks) {
             currentChunkId++;
-            var vector = new DocumentVector();
-            vector.setFileMd5(fileMd5);
-            vector.setChunkId(currentChunkId);
-            vector.setTextContent(chunk);
-            vector.setPageNumber(pageNumber);
-            vector.setAnchorText(buildAnchorText(chunk));
-            vector.setUserId(userId);
-            vector.setOrgTag(orgTag);
-            vector.setPublic(isPublic);
-            documentVectorRepository.save(vector);
+            String anchorText = buildAnchorText(chunk);
+            if (fileUploadId == null || processingVersion == null) {
+                var vector = new DocumentVector();
+                vector.setFileMd5(fileMd5);
+                vector.setChunkId(currentChunkId);
+                vector.setTextContent(chunk);
+                vector.setPageNumber(pageNumber);
+                vector.setAnchorText(anchorText);
+                vector.setUserId(userId);
+                vector.setOrgTag(orgTag);
+                vector.setPublic(isPublic);
+                documentVectorRepository.save(vector);
+            } else {
+                persistVersionedChunk(
+                        fileUploadId,
+                        processingVersion,
+                        fileMd5,
+                        currentChunkId,
+                        chunk,
+                        pageNumber,
+                        anchorText,
+                        userId,
+                        orgTag,
+                        isPublic);
+            }
         }
         logger.info("成功保存 {} 个子切片到数据库", chunks.size());
         return currentChunkId;
     }
 
-    private void parsePdfAndSave(String fileMd5, InputStream fileStream, String userId, String orgTag, boolean isPublic) throws IOException {
+    private void parsePdfAndSave(
+            Long fileUploadId,
+            Integer processingVersion,
+            String fileMd5,
+            InputStream fileStream,
+            String userId,
+            String orgTag,
+            boolean isPublic) throws IOException {
         try (PDDocument document = PDDocument.load(fileStream)) {
             int savedChunkCount = 0;
 
@@ -300,8 +367,58 @@ public class ParseService {
                 }
 
                 List<String> childChunks = splitTextIntoChunksWithSemantics(pageText, chunkSize);
-                savedChunkCount = saveChildChunks(fileMd5, childChunks, userId, orgTag, isPublic, savedChunkCount, pageNumber);
+                savedChunkCount = saveChildChunks(
+                        fileUploadId, processingVersion, fileMd5, childChunks,
+                        userId, orgTag, isPublic, savedChunkCount, pageNumber);
             }
+        }
+    }
+
+    DocumentVector persistVersionedChunk(
+            Long fileUploadId,
+            int processingVersion,
+            String fileMd5,
+            int chunkId,
+            String textContent,
+            Integer pageNumber,
+            String anchorText,
+            String userId,
+            String orgTag,
+            boolean isPublic) {
+        String contentHash = sha256(textContent);
+        versionedChunkWriter.insertIfAbsent(
+                fileUploadId,
+                processingVersion,
+                fileMd5,
+                chunkId,
+                contentHash,
+                textContent,
+                pageNumber,
+                anchorText,
+                userId,
+                orgTag,
+                isPublic);
+        DocumentVector existing = documentVectorRepository
+                .findByFileUploadIdAndProcessingVersionAndChunkId(
+                        fileUploadId, processingVersion, chunkId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Versioned chunk insert did not produce a row"));
+        if (!contentHash.equals(existing.getContentHash())) {
+            throw new DocumentConsistencyException(
+                    "Chunk content hash conflict for fileUploadId=" + fileUploadId
+                            + ", version=" + processingVersion
+                            + ", chunkId=" + chunkId);
+        }
+        return existing;
+    }
+
+    private String sha256(String textContent) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(textContent.getBytes(StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA-256 is unavailable", impossible);
         }
     }
 

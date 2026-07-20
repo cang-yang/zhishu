@@ -100,6 +100,122 @@ public class VectorizationService {
             throw new RuntimeException("向量化失败", e);
         }
     }
+
+    public PreparedVersion prepareVersion(
+            Long fileUploadId,
+            int processingVersion,
+            String fileMd5,
+            String userId,
+            String orgTag,
+            boolean isPublic,
+            String requesterId) {
+        try {
+            List<DocumentVector> chunks = documentVectorRepository
+                    .findByFileUploadIdAndProcessingVersionOrderByChunkIdAsc(
+                            fileUploadId, processingVersion);
+            if (chunks.isEmpty()) {
+                return new PreparedVersion(
+                        List.of(),
+                        new VectorizationUsageResult(
+                                0, 0, embeddingClient.currentModelVersion()));
+            }
+
+            List<String> texts = chunks.stream()
+                    .map(DocumentVector::getTextContent)
+                    .toList();
+            EmbeddingClient.EmbeddingUsageResult embeddingResult = embeddingClient.embedWithUsage(
+                    texts,
+                    requesterId,
+                    EmbeddingClient.UsageType.UPLOAD);
+            if (embeddingResult.vectors().size() != chunks.size()) {
+                throw new DocumentConsistencyException(
+                        "Embedding vector count does not match chunk count for fileUploadId="
+                                + fileUploadId + ", version=" + processingVersion);
+            }
+
+            List<EsDocument> documents = IntStream.range(0, chunks.size())
+                    .mapToObj(index -> toVersionedEsDocument(
+                            fileUploadId,
+                            processingVersion,
+                            fileMd5,
+                            userId,
+                            orgTag,
+                            isPublic,
+                            chunks.get(index),
+                            embeddingResult.vectors().get(index),
+                            embeddingResult.modelVersion()))
+                    .toList();
+            return new PreparedVersion(
+                    documents,
+                    new VectorizationUsageResult(
+                            embeddingResult.totalTokens(),
+                            chunks.size(),
+                            embeddingResult.modelVersion()));
+        } catch (Exception failure) {
+            logger.error(
+                    "Versioned vectorization preparation failed, fileUploadId={}, version={}",
+                    fileUploadId,
+                    processingVersion,
+                    failure);
+            if (failure instanceof RuntimeException runtime) {
+                throw runtime;
+            }
+            throw new RuntimeException("Versioned vectorization preparation failed", failure);
+        }
+    }
+
+    public void indexVersion(PreparedVersion preparedVersion) {
+        if (!preparedVersion.documents().isEmpty()) {
+            elasticsearchService.bulkIndex(preparedVersion.documents());
+        }
+    }
+
+    public VectorizationUsageResult vectorizeVersion(
+            Long fileUploadId,
+            int processingVersion,
+            String fileMd5,
+            String userId,
+            String orgTag,
+            boolean isPublic,
+            String requesterId) {
+        PreparedVersion prepared = prepareVersion(
+                fileUploadId,
+                processingVersion,
+                fileMd5,
+                userId,
+                orgTag,
+                isPublic,
+                requesterId);
+        indexVersion(prepared);
+        return prepared.usage();
+    }
+
+    private EsDocument toVersionedEsDocument(
+            Long fileUploadId,
+            int processingVersion,
+            String fileMd5,
+            String userId,
+            String orgTag,
+            boolean isPublic,
+            DocumentVector chunk,
+            float[] vector,
+            String modelVersion) {
+        EsDocument document = new EsDocument();
+        document.setId(fileUploadId + ":" + processingVersion + ":" + chunk.getChunkId());
+        document.setFileUploadId(fileUploadId);
+        document.setProcessingVersion(processingVersion);
+        document.setFileMd5(fileMd5);
+        document.setChunkId(chunk.getChunkId());
+        document.setTextContent(chunk.getTextContent());
+        document.setPageNumber(chunk.getPageNumber());
+        document.setAnchorText(chunk.getAnchorText());
+        document.setVector(vector);
+        document.setModelVersion(modelVersion);
+        document.setUserId(userId);
+        document.setOrgTag(orgTag);
+        document.setPublic(isPublic);
+        return document;
+    }
     
 
     /**
@@ -124,5 +240,13 @@ public class VectorizationService {
     }
 
     public record VectorizationUsageResult(int actualEmbeddingTokens, int actualChunkCount, String modelVersion) {
+    }
+
+    public record PreparedVersion(
+            List<EsDocument> documents,
+            VectorizationUsageResult usage) {
+        public PreparedVersion {
+            documents = List.copyOf(documents);
+        }
     }
 }

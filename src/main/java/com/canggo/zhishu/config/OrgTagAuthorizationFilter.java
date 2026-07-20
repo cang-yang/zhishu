@@ -64,6 +64,7 @@ public class OrgTagAuthorizationFilter extends OncePerRequestFilter {
                 path.matches(".*/documents/accessible.*") ||
                 path.matches(".*/documents/page-preview.*") ||
                 path.matches(".*/search/hybrid.*") ||
+                path.matches(".*/document-processing/.*") ||
                 (path.matches(".*/documents/[a-fA-F0-9]{32}.*") &&
                         ("DELETE".equals(request.getMethod()) || "POST".equals(request.getMethod())))) {
                 
@@ -82,6 +83,8 @@ public class OrgTagAuthorizationFilter extends OncePerRequestFilter {
                     operation = "获取 PDF 单页预览";
                 } else if (path.contains("/search/hybrid")) {
                     operation = "混合检索";
+                } else if (path.contains("/document-processing/")) {
+                    operation = "文档处理状态或恢复";
                 } else if ("DELETE".equals(request.getMethod()) && path.matches(".*/documents/[a-fA-F0-9]{32}.*")) {
                     operation = "删除文档";
                 } else if ("POST".equals(request.getMethod()) && path.matches(".*/documents/[a-fA-F0-9]{32}/reindex.*")) {

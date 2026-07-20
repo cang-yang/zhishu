@@ -1,11 +1,10 @@
 package com.canggo.zhishu.controller;
 
-import com.canggo.zhishu.config.KafkaConfig;
 import com.canggo.zhishu.exception.CustomException;
-import com.canggo.zhishu.model.FileProcessingTask;
 import com.canggo.zhishu.model.FileUpload;
 import com.canggo.zhishu.model.OrganizationTag;
 import com.canggo.zhishu.repository.FileUploadRepository;
+import com.canggo.zhishu.service.DocumentProcessingRequestService;
 import com.canggo.zhishu.service.FileTypeValidationService;
 import com.canggo.zhishu.service.ParseService;
 import com.canggo.zhishu.service.UploadService;
@@ -14,10 +13,8 @@ import com.canggo.zhishu.utils.LogUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.*;
@@ -32,12 +29,6 @@ public class UploadController {
     private UploadService uploadService;
 
     @Autowired
-    private KafkaTemplate<String, Object> kafkaTemplate;
-
-    @Autowired
-    private KafkaConfig kafkaConfig;
-
-    @Autowired
     private UserService userService;
 
     @Autowired
@@ -49,9 +40,13 @@ public class UploadController {
     @Autowired
     private ParseService parseService;
 
-    public UploadController(UploadService uploadService, KafkaTemplate<String, Object> kafkaTemplate) {
+    private final DocumentProcessingRequestService documentProcessingRequestService;
+
+    public UploadController(
+            UploadService uploadService,
+            DocumentProcessingRequestService documentProcessingRequestService) {
         this.uploadService = uploadService;
-        this.kafkaTemplate = kafkaTemplate;
+        this.documentProcessingRequestService = documentProcessingRequestService;
     }
 
     /**
@@ -279,7 +274,6 @@ public class UploadController {
      * @param userId  当前用户ID
      * @return 返回包含合并后文件访问URL的响应
      */
-    @Transactional
     @PostMapping("/merge")
     public ResponseEntity<Map<String, Object>> mergeFile(
             @RequestBody MergeRequest request,
@@ -312,109 +306,70 @@ public class UploadController {
             }
 
 
-            //实现秒传功能
-            UploadService.InstantTransmissionDeterminationAttributes instantUpload =
-                    uploadService.secondStageInstantUploadDetermination(request.fileMd5(), request.fileName(), userId);
-            if (instantUpload != null && instantUpload.instantUpload()) {
-                // 伪造数据对象
-                Map<String, Object> data = new HashMap<>();
-                data.put("object_url", instantUpload.presignedUrl());
-                data.put("estimatedEmbeddingTokens", instantUpload.estimatedTokens());
-                data.put("estimatedChunkCount", instantUpload.estimatedChunkCount());
+            String objectKey = uploadService.composeOrReuseMergedObject(
+                    request.fileMd5(), request.fileName(), userId);
+            LogUtils.logFileOperation(userId, "COMPOSE", request.fileName(), request.fileMd5(), "SUCCESS");
 
-                // 伪造统一响应格式
-                Map<String, Object> response = new HashMap<>();
-                response.put("code", 200);
-                response.put("message", "文件合并成功，任务已发送到 Kafka");
-                response.put("data", data);
-
-                LogUtils.logUserOperation(userId, "MERGE_FILE", request.fileMd5(), "SUCCESS");
-                monitor.end("文件合并成功");
-                return ResponseEntity.ok(response);
+            Long estimatedTokens = null;
+            Integer estimatedChunkCount = null;
+            if (Boolean.TRUE.equals(fileUpload.getIsRapidUpload())) {
+                estimatedTokens = fileUpload.getEstimatedEmbeddingTokens();
+                estimatedChunkCount = fileUpload.getEstimatedChunkCount();
+            } else {
+                try (io.minio.GetObjectResponse mergedFileStream =
+                             uploadService.getMergedFileStreamByObjectKey(objectKey)) {
+                    ParseService.EmbeddingEstimate embeddingEstimate =
+                            parseService.estimateEmbeddingUsage(mergedFileStream);
+                    estimatedTokens = embeddingEstimate.estimatedTokens();
+                    estimatedChunkCount = embeddingEstimate.estimatedChunkCount();
+                } catch (Exception estimateException) {
+                    LogUtils.logBusinessError(
+                            "MERGE_FILE",
+                            userId,
+                            "文档 Embedding 预估失败: fileMd5=%s, fileName=%s",
+                            estimateException,
+                            request.fileMd5(),
+                            request.fileName());
+                }
             }
 
+            DocumentProcessingRequestService.ProcessingRequestResult processing =
+                    documentProcessingRequestService.finalizeUpload(
+                            fileUpload.getId(),
+                            objectKey,
+                            estimatedTokens,
+                            estimatedChunkCount);
 
-            LogUtils.logBusiness("MERGE_FILE", userId, "权限验证通过，开始合并文件: fileMd5=%s, fileName=%s, fileType=%s", request.fileMd5(), request.fileName(), fileType);
-
-            // 检查分片是否全部上传完成
-            List<Integer> uploadedChunks = uploadService.getUploadedChunks(request.fileMd5(), userId);
-            int totalChunks = uploadService.getTotalChunks(request.fileMd5(), userId);
-            LogUtils.logBusiness("MERGE_FILE", userId, "分片上传状态: fileMd5=%s, fileName=%s, 已上传=%d/%d",
-                    request.fileMd5(), request.fileName(), uploadedChunks.size(), totalChunks);
-
-            if (uploadedChunks.size() < totalChunks) {
-                LogUtils.logUserOperation(userId, "MERGE_FILE", request.fileMd5(), "FAILED_INCOMPLETE_CHUNKS");
-                monitor.end("合并失败：分片未全部上传");
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("code", HttpStatus.BAD_REQUEST.value());
-                errorResponse.put("message", "文件分片未全部上传，无法合并");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-            }
-
-            // 合并文件
-            LogUtils.logBusiness("MERGE_FILE", userId, "开始合并文件分片: fileMd5=%s, fileName=%s, fileType=%s, 分片数量=%d", request.fileMd5(), request.fileName(), fileType, totalChunks);
-            String objectUrl = uploadService.mergeChunks(request.fileMd5(), request.fileName(), userId);
-            LogUtils.logFileOperation(userId, "MERGE", request.fileName(), request.fileMd5(), "SUCCESS");
-
-            ParseService.EmbeddingEstimate embeddingEstimate = null;
-            try (io.minio.GetObjectResponse mergedFileStream = uploadService.getMergedFileStream(request.fileMd5())) {
-                embeddingEstimate = parseService.estimateEmbeddingUsage(mergedFileStream);
-                fileUpload.setEstimatedEmbeddingTokens(embeddingEstimate.estimatedTokens());
-                fileUpload.setEstimatedChunkCount(embeddingEstimate.estimatedChunkCount());
-                fileUploadRepository.save(fileUpload);
+            try {
+                uploadService.cleanupUploadedChunks(request.fileMd5(), userId);
+            } catch (Exception cleanupException) {
                 LogUtils.logBusiness(
                         "MERGE_FILE",
                         userId,
-                        "文档 Embedding 预估完成: fileMd5=%s, estimatedTokens=%d, estimatedChunkCount=%d",
+                        "任务已提交但分片清理未完成，将在重复 merge 时继续清理: fileMd5=%s, error=%s",
                         request.fileMd5(),
-                        embeddingEstimate.estimatedTokens(),
-                        embeddingEstimate.estimatedChunkCount()
-                );
-            } catch (Exception estimateException) {
-                LogUtils.logBusinessError(
-                        "MERGE_FILE",
-                        userId,
-                        "文档 Embedding 预估失败: fileMd5=%s, fileName=%s",
-                        estimateException,
-                        request.fileMd5(),
-                        request.fileName()
-                );
+                        cleanupException.getMessage());
             }
 
-            // 发送任务到 Kafka，包含完整的权限信息
-            LogUtils.logBusiness("MERGE_FILE", userId, "创建文件处理任务: fileMd5=%s, fileName=%s, fileType=%s, orgTag=%s, isPublic=%s",
-                    request.fileMd5(), request.fileName(), fileType, fileUpload.getOrgTag(), fileUpload.isPublic());
-
-            FileProcessingTask task = new FileProcessingTask(
-                    request.fileMd5(),
-                    objectUrl,
-                    request.fileName(),
-                    fileUpload.getUserId(),
-                    fileUpload.getOrgTag(),
-                    fileUpload.isPublic()
-            );
-
-            LogUtils.logBusiness("MERGE_FILE", userId, "发送文件处理任务到Kafka(事务): topic=%s, fileMd5=%s, fileName=%s",
-                    kafkaConfig.getFileProcessingTopic(), request.fileMd5(), request.fileName());
-
-            kafkaTemplate.executeInTransaction(kt -> {
-                kt.send(kafkaConfig.getFileProcessingTopic(), task);
-                return true;
-            });
-            LogUtils.logBusiness("MERGE_FILE", userId, "文件处理任务已发送: fileMd5=%s, fileName=%s, fileType=%s", request.fileMd5(), request.fileName(), fileType);
+            String objectUrl = uploadService.createPresignedUrl(objectKey);
 
             // 构建数据对象
             Map<String, Object> data = new HashMap<>();
             data.put("object_url", objectUrl);
-            if (embeddingEstimate != null) {
-                data.put("estimatedEmbeddingTokens", embeddingEstimate.estimatedTokens());
-                data.put("estimatedChunkCount", embeddingEstimate.estimatedChunkCount());
+            data.put("taskId", processing.taskId());
+            data.put("processingVersion", processing.processingVersion());
+            data.put("status", processing.status().name());
+            if (estimatedTokens != null) {
+                data.put("estimatedEmbeddingTokens", estimatedTokens);
+            }
+            if (estimatedChunkCount != null) {
+                data.put("estimatedChunkCount", estimatedChunkCount);
             }
 
             // 构建统一响应格式
             Map<String, Object> response = new HashMap<>();
             response.put("code", 200);
-            response.put("message", "文件合并成功，任务已发送到 Kafka");
+            response.put("message", "文件合并成功，处理任务已创建");
             response.put("data", data);
 
             LogUtils.logUserOperation(userId, "MERGE_FILE", request.fileMd5(), "SUCCESS");

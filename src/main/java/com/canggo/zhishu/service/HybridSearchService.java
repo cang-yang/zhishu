@@ -16,12 +16,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
 
 /**
@@ -62,77 +66,80 @@ public class HybridSearchService {
      */
     public List<SearchResult> searchWithPermission(String query, String userId, int topK) {
         logger.debug("开始带权限搜索，查询: {}, 用户ID: {}", query, userId);
-        
+
+        final List<String> userEffectiveTags;
+        final String userDbId;
+        final Query visibilityQuery;
         try {
             // 获取用户有效的组织标签（包含层级关系）
-            List<String> userEffectiveTags = getUserEffectiveOrgTags(userId);
+            userEffectiveTags = getUserEffectiveOrgTags(userId);
             logger.debug("用户 {} 的有效组织标签: {}", userId, userEffectiveTags);
 
             // 获取用户的数据库ID用于权限过滤
-            String userDbId = getUserDbId(userId);
+            userDbId = getUserDbId(userId);
             logger.debug("用户 {} 的数据库ID: {}", userId, userDbId);
 
+            List<FileUpload> accessibleFiles = userEffectiveTags.isEmpty()
+                    ? fileUploadRepository.findByUserIdOrIsPublicTrue(userDbId)
+                    : fileUploadRepository.findAccessibleFilesWithTags(userDbId, userEffectiveTags);
+            visibilityQuery = buildVisibilityQuery(accessibleFiles);
+            if (visibilityQuery.isMatchNone()) {
+                return Collections.emptyList();
+            }
+        } catch (Exception visibilityFailure) {
+            logger.error("Failed to build active-version visibility scope for user {}", userId, visibilityFailure);
+            return Collections.emptyList();
+        }
+
+        try {
             // 生成查询向量
             final List<Float> queryVector = embedToVectorList(query, userId);
 
             // 如果向量生成失败，仅使用文本匹配
             if (queryVector == null) {
                 logger.warn("向量生成失败，仅使用文本匹配进行搜索");
-                return textOnlySearchWithPermission(query, userDbId, userEffectiveTags, topK);
+                return textOnlySearchWithPermission(query, visibilityQuery, topK);
             }
 
             logger.debug("向量生成成功，开始执行混合搜索 KNN");
 
             SearchResponse<EsDocument> response = esClient.search(s -> {
-                        s.index("knowledge_base");
-                        // KNN 召回
-                        int recallK = topK * 30; // KNN 召回窗口
-                        s.knn(kn -> kn
-                                .field("vector")
-                                .queryVector(queryVector)
-                                .k(recallK)
-                                .numCandidates(recallK)
-                        );
-                        // 必须命中关键词 + 权限过滤
-                        s.query(q -> q.bool(b -> b
-                                .must(mst -> mst.match(m -> m.field("textContent").query(query)))
-                                .filter(f -> f.bool(bf -> bf
-                                        // 条件1: 用户可访问自己的文档
-                                        .should(s1 -> s1.term(t -> t.field("userId").value(userDbId)))
-                                        // 条件2: 公开文档
-                                        .should(s2 -> s2.term(t -> t.field("public").value(true)))
-                                        // 条件3: 组织标签
-                                        .should(s3 -> {
-                                            if (userEffectiveTags.isEmpty()) {
-                                                return s3.matchNone(mn -> mn);
-                                            } else if (userEffectiveTags.size() == 1) {
-                                                return s3.term(t -> t.field("orgTag").value(userEffectiveTags.get(0)));
-                                            } else {
-                                                return s3.bool(inner -> {
-                                                    userEffectiveTags.forEach(tag -> inner.should(sh2 -> sh2.term(t -> t.field("orgTag").value(tag))));
-                                                    return inner;
-                                                });
-                                            }
-                                        })
-                                ))
-                        ));
+                s.index("knowledge_base");
+                // KNN 召回窗口
+                int recallK = topK * 30;
 
-                        // 第二阶段 BM25 rescore
-                        s.rescore(r -> r
-                                .windowSize(recallK)
-                                .query(rq -> rq
-                                        .queryWeight(0.2d)               // 保留部分 KNN 分
-                                        .rescoreQueryWeight(1.0d)        // BM25 主导
-                                        .query(rqq -> rqq.match(m -> m
-                                                .field("textContent")
-                                                .query(query)
-                                                .operator(Operator.And)
-                                        ))
-                                )
-                        );
-                        s.size(topK);
-                        return s;
-                    }, EsDocument.class);
+                // ===== KNN 向量召回 + 权限过滤 =====
+                s.knn(kn -> kn
+                        .field("vector")
+                        .queryVector(queryVector)
+                        .k(recallK)
+                        .numCandidates(recallK * 2) // 候选数设为 k 的 2 倍，提升召回精度
+                        // KNN 也必须做权限过滤，否则无权限文档会通过并集合并混入结果
+                        .filter(visibilityQuery)
+                );
+
+                // ===== 关键词匹配 + 权限过滤 =====
+                s.query(q -> q.bool(b -> b
+                        .must(mst -> mst.match(m -> m.field("textContent").query(query)))
+                        .filter(visibilityQuery)
+                ));
+
+                // ===== 第二阶段 BM25 rescore =====
+                s.rescore(r -> r
+                        .windowSize(recallK)
+                        .query(rq -> rq
+                                .queryWeight(0.2d)
+                                .rescoreQueryWeight(1.0d)
+                                .query(rqq -> rqq.match(m -> m
+                                        .field("textContent")
+                                        .query(query)
+                                        .operator(Operator.And)
+                                ))
+                        )
+                );
+                s.size(topK);
+                return s;
+            }, EsDocument.class);
 
             logger.debug("Elasticsearch查询执行完成，命中数量: {}, 最大分数: {}", 
                 response.hits().total().value(), response.hits().maxScore());
@@ -168,7 +175,7 @@ public class HybridSearchService {
             // 发生异常时尝试使用纯文本搜索作为后备方案
             try {
                 logger.info("尝试使用纯文本搜索作为后备方案");
-                return textOnlySearchWithPermission(query, getUserDbId(userId), getUserEffectiveOrgTags(userId), topK);
+                return textOnlySearchWithPermission(query, visibilityQuery, topK);
             } catch (Exception fallbackError) {
                 logger.error("后备搜索也失败", fallbackError);
                 return Collections.emptyList();
@@ -179,9 +186,12 @@ public class HybridSearchService {
     /**
      * 仅使用文本匹配的带权限搜索方法
      */
-    private List<SearchResult> textOnlySearchWithPermission(String query, String userDbId, List<String> userEffectiveTags, int topK) {
+    private List<SearchResult> textOnlySearchWithPermission(
+            String query,
+            Query visibilityQuery,
+            int topK) {
         try {
-            logger.debug("开始执行纯文本搜索，用户数据库ID: {}, 标签: {}", userDbId, userEffectiveTags);
+            logger.debug("开始执行带 active-version 门禁的纯文本搜索");
 
             SearchResponse<EsDocument> response = esClient.search(s -> s
                     .index("knowledge_base")
@@ -194,48 +204,7 @@ public class HybridSearchService {
                                                     .query(query)
                                             )
                                     )
-                                    // 权限过滤
-                                    .filter(f -> f
-                                            .bool(bf -> bf
-                                                    // 条件1: 用户可以访问自己的文档
-                                                    .should(s1 -> s1
-                                                            .term(t -> t
-                                                                    .field("userId")
-                                                                    .value(userDbId)
-                                                            )
-                                                    )
-                                                    // 条件2: 用户可以访问公开的文档
-                                                    .should(s2 -> s2
-                                                            .term(t -> t
-                                                                    .field("public")
-                                                                    .value(true)
-                                                            )
-                                                    )
-                                                    // 条件3: 用户可以访问其所属组织的文档（包含层级关系）
-                                                    .should(s3 -> {
-                                                        if (userEffectiveTags.isEmpty()) {
-                                                            return s3.matchNone(mn -> mn);
-                                                        } else if (userEffectiveTags.size() == 1) {
-                                                            // 单个标签使用 term 查询
-                                                            return s3.term(t -> t
-                                                                    .field("orgTag")
-                                                                    .value(userEffectiveTags.get(0))
-                                                            );
-                                                        } else {
-                                                            // 多个标签使用 bool should 组合多个 term 查询
-                                                            return s3.bool(innerBool -> {
-                                                                userEffectiveTags.forEach(tag ->
-                                                                        innerBool.should(sh -> sh.term(t -> t
-                                                                                .field("orgTag")
-                                                                                .value(tag)
-                                                                        ))
-                                                                );
-                                                                return innerBool;
-                                                            });
-                                                        }
-                                                    })
-                                            )
-                                    )
+                                    .filter(visibilityQuery)
                             )
                     )
                     .minScore(0.3d)
@@ -282,9 +251,20 @@ public class HybridSearchService {
      * 原始搜索方法，不包含权限过滤，保留向后兼容性
      */
     public List<SearchResult> search(String query, int topK) {
+        final Query visibilityQuery;
+        try {
+            visibilityQuery = buildVisibilityQuery(fileUploadRepository.findByIsPublicTrue());
+            if (visibilityQuery.isMatchNone()) {
+                return Collections.emptyList();
+            }
+        } catch (Exception visibilityFailure) {
+            logger.error("Failed to build anonymous public active-version visibility scope", visibilityFailure);
+            return Collections.emptyList();
+        }
+
         try {
             logger.debug("开始混合检索，查询: {}, topK: {}", query, topK);
-            logger.warn("使用了没有权限过滤的搜索方法，建议使用 searchWithPermission 方法");
+            logger.debug("使用匿名公开文档 active-version 门禁");
 
             // 生成查询向量
             final List<Float> queryVector = embedToVectorList(query, "system");
@@ -292,7 +272,7 @@ public class HybridSearchService {
             // 如果向量生成失败，仅使用文本匹配
             if (queryVector == null) {
                 logger.warn("向量生成失败，仅使用文本匹配进行搜索");
-                return textOnlySearch(query, topK);
+                return textOnlySearch(query, visibilityQuery, topK);
             }
 
             SearchResponse<EsDocument> response = esClient.search(s -> {
@@ -303,10 +283,13 @@ public class HybridSearchService {
                                 .queryVector(queryVector)
                                 .k(recallK)
                                 .numCandidates(recallK)
+                                .filter(visibilityQuery)
                         );
 
                         // 过滤仅保留包含关键词的文本
-                        s.query(q -> q.match(m -> m.field("textContent").query(query)));
+                        s.query(q -> q.bool(b -> b
+                                .must(m -> m.match(ma -> ma.field("textContent").query(query)))
+                                .filter(visibilityQuery)));
 
                         // rescore BM25
                         s.rescore(r -> r
@@ -349,7 +332,7 @@ public class HybridSearchService {
             // 发生异常时尝试使用纯文本搜索作为后备方案
             try {
                 logger.info("尝试使用纯文本搜索作为后备方案");
-                return textOnlySearch(query, topK);
+                return textOnlySearch(query, visibilityQuery, topK);
             } catch (Exception fallbackError) {
                 logger.error("后备搜索也失败", fallbackError);
                 throw new RuntimeException("搜索完全失败", fallbackError);
@@ -360,15 +343,17 @@ public class HybridSearchService {
     /**
      * 仅使用文本匹配的搜索方法
      */
-    private List<SearchResult> textOnlySearch(String query, int topK) throws Exception {
+    private List<SearchResult> textOnlySearch(
+            String query,
+            Query visibilityQuery,
+            int topK) throws Exception {
         SearchResponse<EsDocument> response = esClient.search(s -> s
                 .index("knowledge_base")
-                .query(q -> q
-                        .match(m -> m
+                .query(q -> q.bool(b -> b
+                        .must(m -> m.match(ma -> ma
                                 .field("textContent")
-                                .query(query)
-                        )
-                )
+                                .query(query)))
+                        .filter(visibilityQuery)))
                 .size(topK),
                 EsDocument.class
         );
@@ -392,6 +377,86 @@ public class HybridSearchService {
                     );
                 })
                 .toList();
+    }
+
+    Query buildVisibilityQuery(List<FileUpload> accessibleFiles) {
+        if (accessibleFiles == null || accessibleFiles.isEmpty()) {
+            return Query.of(query -> query.matchNone(matchNone -> matchNone));
+        }
+
+        Map<Integer, LinkedHashSet<Long>> activeFileIdsByVersion = new LinkedHashMap<>();
+        Map<String, LinkedHashSet<String>> legacyMd5sByOwner = new LinkedHashMap<>();
+        for (FileUpload file : accessibleFiles) {
+            Integer activeVersion = file.getActiveProcessingVersion();
+            if (activeVersion == null) {
+                continue;
+            }
+            if (activeVersion > 0 && file.getId() != null) {
+                activeFileIdsByVersion
+                        .computeIfAbsent(activeVersion, ignored -> new LinkedHashSet<>())
+                        .add(file.getId());
+                continue;
+            }
+            if (activeVersion == 0
+                    && file.getFileMd5() != null
+                    && file.getUserId() != null) {
+                legacyMd5sByOwner
+                        .computeIfAbsent(file.getUserId(), ignored -> new LinkedHashSet<>())
+                        .add(file.getFileMd5());
+            }
+        }
+
+        List<Query> branches = new ArrayList<>();
+        activeFileIdsByVersion.forEach((version, fileIds) -> {
+            Query fileScope = numericTermOrTerms("fileUploadId", fileIds);
+            branches.add(Query.of(query -> query.bool(bool -> bool
+                    .must(fileScope)
+                    .must(must -> must.term(term -> term
+                            .field("processingVersion")
+                            .value(version))))));
+        });
+        legacyMd5sByOwner.forEach((ownerUserId, fileMd5s) -> {
+            Query fileScope = stringTermOrTerms("fileMd5", fileMd5s);
+            branches.add(Query.of(query -> query.bool(bool -> bool
+                    .must(fileScope)
+                    .must(must -> must.term(term -> term
+                            .field("userId")
+                            .value(ownerUserId)))
+                    .mustNot(mustNot -> mustNot.exists(exists -> exists
+                            .field("fileUploadId"))))));
+        });
+
+        if (branches.isEmpty()) {
+            return Query.of(query -> query.matchNone(matchNone -> matchNone));
+        }
+        return Query.of(query -> query.bool(bool -> {
+            branches.forEach(bool::should);
+            return bool.minimumShouldMatch("1");
+        }));
+    }
+
+    private Query numericTermOrTerms(String field, LinkedHashSet<Long> values) {
+        if (values.size() == 1) {
+            return Query.of(query -> query.term(term -> term
+                    .field(field)
+                    .value(values.iterator().next())));
+        }
+        List<FieldValue> fieldValues = values.stream().map(FieldValue::of).toList();
+        return Query.of(query -> query.terms(terms -> terms
+                .field(field)
+                .terms(value -> value.value(fieldValues))));
+    }
+
+    private Query stringTermOrTerms(String field, LinkedHashSet<String> values) {
+        if (values.size() == 1) {
+            return Query.of(query -> query.term(term -> term
+                    .field(field)
+                    .value(values.iterator().next())));
+        }
+        List<FieldValue> fieldValues = values.stream().map(FieldValue::of).toList();
+        return Query.of(query -> query.terms(terms -> terms
+                .field(field)
+                .terms(value -> value.value(fieldValues))));
     }
 
     /**

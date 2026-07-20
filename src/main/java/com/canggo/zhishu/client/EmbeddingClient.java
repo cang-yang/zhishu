@@ -121,13 +121,7 @@ public class EmbeddingClient {
 
     private String callApiOnce(List<String> batch) {
         ModelProviderConfigService.ActiveProviderView provider = modelProviderConfigService.getActiveProvider(ModelProviderConfigService.SCOPE_EMBEDDING);
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", provider.model());
-        requestBody.put("input", batch);
-        if (provider.dimension() != null) {
-            requestBody.put("dimension", provider.dimension());
-        }
-        requestBody.put("encoding_format", "float");
+        Map<String, Object> requestBody = buildRequestBody(provider, batch);
 
         logger.debug("发送嵌入请求 - Provider: {}, 模型: {}, 维度: {}, 批次大小: {}, 文本预览: {}",
                 provider.provider(), provider.model(), provider.dimension(), batch.size(),
@@ -143,6 +137,19 @@ public class EmbeddingClient {
                         .doBeforeRetry(signal -> logger.warn("重试API调用 - 尝试: {}, 错误: {}",
                                 signal.totalRetries() + 1, signal.failure().getMessage())))
                 .block(Duration.ofSeconds(30));
+    }
+
+    static Map<String, Object> buildRequestBody(
+            ModelProviderConfigService.ActiveProviderView provider,
+            List<String> batch) {
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", provider.model());
+        requestBody.put("input", batch);
+        if (provider.dimension() != null) {
+            requestBody.put("dimensions", provider.dimension());
+        }
+        requestBody.put("encoding_format", "float");
+        return requestBody;
     }
 
     private WebClient buildClient(ModelProviderConfigService.ActiveProviderView provider) {
